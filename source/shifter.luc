@@ -1,13 +1,40 @@
-module shifter (
-    input a[32],
+module shifter #(
+    SIZE = 32 : SIZE > 0
+)(
+    input a[SIZE],
     input b[5],
     input alufn[6],
-    output shift[32]
+    output shift[SIZE]
 ) {
-
+    x_bit_left_shifter left_shift[5](#SHIFT({5d16, 5d8, 5d4, 5d2, 5d1}))
+    x_bit_right_shifter right_shift[5](#SHIFT({5d16, 5d8, 5d4, 5d2, 5d1}))
+    x_bit_right_shifter arith_right_shift[5](#SHIFT({5d16, 5d8, 5d4, 5d2, 5d1}))
+    
     always {
-        // implement shifter unit logic here
-        shift = 0
         
+        // implement shifter unit logic here
+        repeat(i, 5){
+            if (i == 0){
+                left_shift.a[i] = a
+                right_shift.a[i] = a
+                arith_right_shift.a[i] = a
+            } else {
+                left_shift.a[i] = left_shift.out[i-1]
+                right_shift.a[i] = right_shift.out[i-1]
+                arith_right_shift.a[i] = arith_right_shift.out[i-1]
+            }
+            left_shift.shift[i] = b[i]
+            left_shift.pad = 0
+            right_shift.shift[i] = b[i]
+            right_shift.pad = 0
+            arith_right_shift.shift[i] = b[i]
+            arith_right_shift.pad = a[SIZE-1]
+        }
+        case(alufn[1:0]){
+            b00: shift = left_shift.out[4]
+            b01: shift = right_shift.out[4]
+            b11: shift = arith_right_shift.out[4]
+            default: shift = a
+        }
     } 
 }

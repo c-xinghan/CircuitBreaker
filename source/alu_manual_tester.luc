@@ -5,6 +5,7 @@ module alu_manual_tester#(
     input rst,  // reset
     input io_button[5],
     input io_dip[3][8],
+    output led[8],
     output io_led[3][8],
     output io_segment[8],
     output io_select[4]
@@ -12,14 +13,82 @@ module alu_manual_tester#(
     
     alu alu
     
+    enum States {
+        ALOW,
+        AHIGH,
+        BLOW,
+        BHIGH,
+        RESULT
+    }
+
+    const CLK_FREQ = $is_sim() ? 1000 : 100000000
+    const SEVEN_SEG_DIV = $is_sim() ? 3 : 16
+    
+    .clk(clk){
+        edge_detector io_button_edge[5](#RISE(5x{{1}}), #FALL(5x{{0}}))
+        button_conditioner io_button_cond[5](#CLK_FREQ(5x{{CLK_FREQ}}))
+        .rst(rst){
+            dff states[$width(States)](#INIT(States.ALOW))
+            signed dff a_value[32](#INIT(0))
+            signed dff b_value[32](#INIT(0))
+            multi_seven_seg seg(#DIV(SEVEN_SEG_DIV)) 
+        }
+    }
+    
+    bin_to_dec decimal_renderer(#DIGITS(4), #LEADING_ZEROS(1))
+    
     always {
+        
+        io_button_cond.in = io_button
+        io_button_edge.in = io_button_cond.out
         // implement alu tester logic here
         alu.a = 0
         alu.b = 0
         alu.alufn = 0
-        io_led = 3x{{8h0}}
         io_segment = 0
         io_select = 4hF
-        
+        led = 0
+        led[0] = alu.z
+        led[1] = alu.v
+        led[2] = alu.n
+        decimal_renderer.value = alu.out[12:0]
+        io_led = c{{c{5b0, alu.out[31:29]}}, {alu.out[28:21]}, {alu.out[20:13]}}
+        seg.values = decimal_renderer.digits
+        io_segment = ~seg.seg
+        io_select = ~seg.sel
+
+        case(states.q){
+            States.ALOW:
+                a_value.d = c{16x{0}, io_dip[1], io_dip[0]}
+                if (io_button_edge.out[1]){
+                    states.d = States.AHIGH
+                }
+            
+            States.AHIGH:
+                a_value.d = c{io_dip[1], io_dip[0], a_value.q[15:0]}
+                if (io_button_edge.out[1]){
+                    states.d = States.BLOW
+                }
+            
+            States.BLOW:
+                b_value.d = c{16x{0}, io_dip[1], io_dip[0]}
+                if (io_button_edge.out[1]){
+                    states.d = States.BHIGH
+                }
+            
+            States.BHIGH:
+                b_value.d = c{io_dip[1], io_dip[0], b_value.q[15:0]}
+                if (io_button_edge.out[1]){   
+                    states.d = States.RESULT
+                }
+            
+            States.RESULT:
+                alu.a = a_value.q
+                alu.b = b_value.q
+                alu.alufn = io_dip[2][5:0]
+                if (io_button_edge.out[1]){   
+                    states.d = States.ALOW
+                }
+        }
     }
 }

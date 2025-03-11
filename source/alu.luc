@@ -7,14 +7,42 @@ module alu (
     output v,
     output n
 ) {
-    
-    
+    adder adder(#SIZE(32))
+    compare compare
+    boolean boolean(#SIZE(32))
+    shifter shifter(#SIZE(32))
     
     always {
         // implement alu logic here
-        out = 0 
-        z = 0
-        v = 0 
-        n = 0    
+        //adder
+            adder.a = a;
+            adder.b = b;
+            adder.alufn_signal = alufn;
+        
+            z = adder.z;
+            v = adder.v;
+            n = adder.n;
+
+        //compare
+            compare.z = adder.z
+            compare.v = adder.v
+            compare.n = adder.n
+            compare.alufn = alufn
+        
+        //boolean
+            boolean.a = a
+            boolean.b = b
+            boolean.alufn = alufn
+        
+        //shifter
+            shifter.a = a
+            shifter.b = b[4:0]
+            shifter.alufn = alufn
+        
+        //output
+            //out = adder.out;
+            //out = c{31x{b0}, compare.cmp}
+            //out = boolean.bool
+            out = shifter.shift
     }
 }

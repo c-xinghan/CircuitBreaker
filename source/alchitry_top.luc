@@ -35,6 +35,7 @@ module alchitry_top (
         io_segment = alu_manual.io_segment
         io_select = alu_manual.io_select         
         io_led = alu_manual.io_led
+        led = alu_manual.led
  
     }
 }
