@@ -21,12 +21,12 @@ module alu_manual_tester#(
         RESULT
     }
 
-    const CLK_FREQ = $is_sim() ? 1000 : 100000000
+    const CLK_FREQ1 = $is_sim() ? 1000 : 100000000
     const SEVEN_SEG_DIV = $is_sim() ? 3 : 16
     
     .clk(clk){
         edge_detector io_button_edge[5](#RISE(5x{{1}}), #FALL(5x{{0}}))
-        button_conditioner io_button_cond[5](#CLK_FREQ(5x{{CLK_FREQ}}))
+        button_conditioner io_button_cond[5](#CLK_FREQ(5x{{CLK_FREQ1}}))
         .rst(rst){
             dff states[$width(States)](#INIT(States.ALOW))
             signed dff a_value[32](#INIT(0))
