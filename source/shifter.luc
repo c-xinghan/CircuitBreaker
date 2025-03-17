@@ -24,11 +24,11 @@ module shifter #(
                 arith_right_shift.a[i] = arith_right_shift.out[i-1]
             }
             left_shift.shift[i] = b[i]
-            left_shift.pad = 0
+            left_shift.pad = 5x{0}
             right_shift.shift[i] = b[i]
-            right_shift.pad = 0
+            right_shift.pad = 5x{0}
             arith_right_shift.shift[i] = b[i]
-            arith_right_shift.pad = a[SIZE-1]
+            arith_right_shift.pad = 5x{a[SIZE-1]}
         }
         case(alufn[1:0]){
             b00: shift = left_shift.out[4]

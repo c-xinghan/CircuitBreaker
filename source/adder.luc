@@ -20,8 +20,11 @@ module adder #(
         rca.cin = alufn_signal[0]
         
         out = rca.s
+        // z checks if out is zero
         z = ~|rca.s
+        // v checks for overflow
         v = (~a[SIZE-1] & ~xb[SIZE-1] & rca.s[SIZE-1]) | (a[SIZE-1] & xb[SIZE-1] & ~rca.s[SIZE-1])
+        // n checks if out is negative
         n = rca.s[SIZE-1]
         
     }

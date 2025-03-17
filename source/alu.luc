@@ -7,14 +7,21 @@ module alu (
     output v,
     output n
 ) {
+    // instantiate modules
     adder adder(#SIZE(32))
     compare compare
     boolean boolean(#SIZE(32))
     shifter shifter(#SIZE(32))
+    multiplier multiplier(#SIZE(32))
+    mux_2 mux_2[32]
+    mux_4 mux_4[32]
+
+    // Internal signals
+    sig compare_out[32]
     
     always {
         // implement alu logic here
-        //adder
+        // adder
             adder.a = a;
             adder.b = b;
             adder.alufn_signal = alufn;
@@ -23,26 +30,36 @@ module alu (
             v = adder.v;
             n = adder.n;
 
-        //compare
+        // compare
             compare.z = adder.z
             compare.v = adder.v
             compare.n = adder.n
             compare.alufn = alufn
         
-        //boolean
+        // boolean
             boolean.a = a
             boolean.b = b
             boolean.alufn = alufn
         
-        //shifter
+        // shifter
             shifter.a = a
             shifter.b = b[4:0]
             shifter.alufn = alufn
         
-        //output
-            //out = adder.out;
-            //out = c{31x{b0}, compare.cmp}
-            //out = boolean.bool
-            out = shifter.shift
+        // multiplier
+            multiplier.a = a
+            multiplier.b = b
+        
+        // output
+            compare_out = c{31x{b0}, compare.cmp}
+            mux_2.s0 = 32x{alufn[1]}
+            mux_4.s0 = 32x{alufn[4]}
+            mux_4.s1 = 32x{alufn[5]}
+            repeat(i, 32){
+                mux_2.in[i] = c{multiplier.mul[i], adder.out[i]}
+                mux_4.in[i] = c{compare_out[i], shifter.shift[i], boolean.bool[i], mux_2.out[i]}
+            }
+            out = mux_4.out
+        
     }
 }

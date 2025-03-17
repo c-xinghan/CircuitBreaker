@@ -41,47 +41,56 @@ module alu_manual_tester#(
         
         io_button_cond.in = io_button
         io_button_edge.in = io_button_cond.out
-        // implement alu tester logic here
+            // implement alu tester logic here
+            // initialise values to avoid "not driven/partially driven" errors
         alu.a = 0
         alu.b = 0
         alu.alufn = 0
-        io_segment = 0
-        io_select = 4hF
         led = 0
+            // use top 3 vertical LEDs to display z, v and n
         led[0] = alu.z
         led[1] = alu.v
         led[2] = alu.n
+            // use 7seg to display last 12 bits of output
         decimal_renderer.value = alu.out[12:0]
-        io_led = c{{c{5b0, alu.out[31:29]}}, {alu.out[28:21]}, {alu.out[20:13]}}
         seg.values = decimal_renderer.digits
         io_segment = ~seg.seg
         io_select = ~seg.sel
+            // use IO LEDs to display first 20 bits of output
+            // leftmost 5 LEDs are unused
+        io_led = c{{c{5b0, alu.out[31:29]}}, {alu.out[28:21]}, {alu.out[20:13]}}
 
         case(states.q){
+            // default state: Input last 16 bits of value a 
             States.ALOW:
                 a_value.d = c{16x{0}, io_dip[1], io_dip[0]}
                 if (io_button_edge.out[1]){
                     states.d = States.AHIGH
                 }
             
+            // state 2: Input first 16 bits of value a 
             States.AHIGH:
                 a_value.d = c{io_dip[1], io_dip[0], a_value.q[15:0]}
                 if (io_button_edge.out[1]){
                     states.d = States.BLOW
                 }
             
+            // state 3: Input last 16 bits of value b 
             States.BLOW:
                 b_value.d = c{16x{0}, io_dip[1], io_dip[0]}
                 if (io_button_edge.out[1]){
                     states.d = States.BHIGH
                 }
             
+            
+            // state 4: Input first 16 bits of value b  
             States.BHIGH:
                 b_value.d = c{io_dip[1], io_dip[0], b_value.q[15:0]}
                 if (io_button_edge.out[1]){   
                     states.d = States.RESULT
                 }
             
+            // state 5: Display results
             States.RESULT:
                 alu.a = a_value.q
                 alu.b = b_value.q
