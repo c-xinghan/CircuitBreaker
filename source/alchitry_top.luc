@@ -12,37 +12,64 @@ module alchitry_top (
 ) {
     
     sig rst                 // reset signal
+    const CLK_FREQ = $is_sim() ? 1000 : 10000000 // put 1000 for sim, 10000000 otherwise in hardware
+    const SEVEN_SEG_DIV = $is_sim() ? 3 : 16 // put 3 for sim, 16 for hardware
+    const SLOW_CLOCK_DIV = $is_sim() ? 9 : 26 // put 9 for sim, 26 for hardware 
+    const FAST_CLOCK_DIV = $is_sim() ? 7 : 21 // put 7 for sim, 21 for hardware 
     
     .clk(clk) {
         // The reset conditioner is used to synchronize the reset signal to the FPGA
         // clock. This ensures the entire FPGA comes out of reset at the same time.
         reset_conditioner reset_cond
+        edge_detector edge_dt_btn (#RISE(1), #FALL(0))
+        button_conditioner btn_cond(#CLK_FREQ(CLK_FREQ))
+        .rst(rst){
+            multi_seven_seg seg(#DIV(SEVEN_SEG_DIV), #DIGITS(4))
+            datapath datapath(#SLOW_CLOCK_DIV(SLOW_CLOCK_DIV), #FAST_CLOCK_DIV(FAST_CLOCK_DIV))
+        }
     }
-    const CLK_FREQ = $is_sim() ? 1000 : 10000000 // put 1000 for sim, 10000000 otherwise in hardware
-    
-    alu_manual_tester alu_manual(.clk(clk), .rst(rst), .io_button(io_button), .io_dip(io_dip), #CLK_FREQ(CLK_FREQ))
-    alu_auto_tester alu_auto(.clk(clk), .rst(rst), .io_button(io_button), .io_dip(io_dip), #CLK_FREQ(CLK_FREQ)) 
+
+    bin_to_dec bin_to_dec_converter(#DIGITS(4))
+    //random_wires random_wires(.clk(clk), .rst(rst), .io_button(io_button))
     
     always {
         reset_cond.in = ~rst_n  // input raw inverted reset signal
         rst = reset_cond.out    // conditioned reset
         
-        led = 8h00             // turn LEDs off
+        led = 8h00             // turn LEDs off    
+        io_led = 3x{{8b0}}
+        io_segment = 8hff          // turn segments off
+        io_select = 4hf           // select no digits
         
         usb_tx = usb_rx          // loop serial port
 
-        // toggles between automatic and manual testing 
-        if (io_dip[2][7]){
-            io_segment = alu_auto.io_segment
-            io_select = alu_auto.io_select         
-            io_led = alu_auto.io_led
-            led = alu_auto.led
-        }
-        else {
-            io_segment = alu_manual.io_segment
-            io_select = alu_manual.io_select         
-            io_led = alu_manual.io_led
-            led = alu_manual.led
-        }
+        btn_cond.in = io_button[0] //to reduce the bouncing effects of your button
+        edge_dt_btn.in = btn_cond.out //get the edge of button press
+        
+        datapath.button = edge_dt_btn.out
+        
+        //update 7segments
+        seg.values = 4x{{4b0}} // default to all 0 first
+        bin_to_dec_converter.value = datapath.timer_out
+        bin_to_dec_converter.value = datapath.debug_general
+        led = datapath.round_out
+        seg.values = bin_to_dec_converter.digits
+        io_segment = ~seg.seg
+        io_select = ~seg.sel
+
+        //io_led[2] = game_datapath.timer_out // timer
+        //io_led[0] = game_datapath.p1_score_out    // p1 score 
+        //io_led[1] = game_datapath.p2_score_out    // p2 score
+        //led[0] = game_datapath.slow_clock_out
+        //led[1] = game_datapath.variable_clock_out
+        //led[7:6] = game_datapath.p1_button_press_out
+        //led[5:4] = game_datapath.p2_button_press_out
+        
+        //io_segment = random_wires.io_segment
+        //io_select = random_wires.io_select
+        
+        //io_led = random_wires.io_led
+        //led = random_wires.led
+        
     }
 }

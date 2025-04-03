@@ -1,0 +1,78 @@
+// regfile.luc
+module regfile (
+    input clk,  // clock
+    input rst,  // reset
+    input wa[4], // write address
+    input we, // write enable
+    input data[32], // data in
+    
+    input ra1[4], // read address port 1
+    output rd1[32], // read data port 1
+    
+    // states
+    output current_round[32],
+    output current_timer[32],
+    output sound[32],
+    output debug[32]
+) 
+
+{
+    .clk(clk){
+        .rst(rst){
+            dff round[32](#INIT(0))
+            dff seconds_remaining[32](#INIT(0))
+            dff wire_1[32](#INIT(0))
+            dff wire_2[32](#INIT(0))
+            dff wire_3[32](#INIT(0))
+            dff wire_4[32](#INIT(0))
+            dff wire_5[32](#INIT(0))
+            dff buzzer[32](#INIT(0))
+            dff temp_1[32](#INIT(0))
+            dff temp_2[32](#INIT(0))
+            dff temp_3[32](#INIT(0))
+            dff temp_4[32](#INIT(0))
+        }
+    }
+    
+    always {
+        
+        //write port
+        if (we){
+            case(wa){
+                d0 : round.d = data
+                d1 : seconds_remaining.d = data
+                d2 : wire_1.d = data
+                d3 : wire_2.d = data
+                d4 : wire_3.d = data
+                d5 : wire_4.d = data
+                d6 : wire_5.d = data
+                d7 : buzzer.d = data
+                d8 : temp_1.d = data
+                d9 : temp_2.d = data
+                d10 : temp_3.d = data
+                d11 : temp_4.d = data
+            }
+        }
+
+        //read port a
+        case(ra1){
+            d0 : rd1 = round.q
+            d1 : rd1 = seconds_remaining.q
+            d2 : rd1 = wire_1.q
+            d3 : rd1 = wire_2.q
+            d4 : rd1 = wire_3.q
+            d5 : rd1 = wire_4.q
+            d6 : rd1 = wire_5.q
+            d7 : rd1 = buzzer.q
+            d8 : rd1 = temp_1.q
+            d9 : rd1 = temp_2.q
+            d10 : rd1 = temp_3.q
+            d11 : rd1 = temp_4.q
+            default : rd1 = 0
+        }
+        current_round = round.q
+        current_timer = seconds_remaining.q
+        sound = buzzer.q
+        debug = temp_1.q
+    }
+}

@@ -1,0 +1,74 @@
+module cu (
+    input clk,  // clock
+    input rst,  // reset
+    input decrease_timer,
+    
+    input button,
+    
+    output alufn[6],
+    output asel[2],
+    output bsel[2],
+    output alu_out_sel[3],
+    output regfile_wa[4],
+    output regfile_ra1[4],
+    output regfile_we,
+    output debug[32]
+) {
+    
+    enum GameStates {
+        INIT,
+        START_ROUND1,
+        RANDOMISE_WIRES
+    }
+    
+    dff fsm[$width(GameStates)](#INIT(GameStates.INIT), .clk(clk), .rst(rst))
+    
+    always {
+        
+        // standard setting unless otherwise overwritten by each case 
+        alufn = 0
+        asel = 0 
+        bsel = 0
+        regfile_we = 0
+        regfile_wa = d8 
+        regfile_ra1 = d0
+        alu_out_sel = b000
+        
+        debug = b0000
+        
+        
+        fsm.d = fsm.q
+        if (rst){
+            fsm.d = GameStates.START_ROUND1
+        }
+        else{
+            
+            case(fsm.q){
+                GameStates.INIT:  
+                    alu_out_sel = b100
+                    regfile_we = 1 
+                    regfile_wa = d8  
+                    if (button){
+                        fsm.d = GameStates.START_ROUND1
+                    }
+                
+                GameStates.START_ROUND1: 
+                    alufn = b000000
+                    asel = b0
+                    bsel = b1              
+                    alu_out_sel = b000
+                    regfile_we = 1 
+                    regfile_wa = d0     
+                    fsm.d = GameStates.RANDOMISE_WIRES
+                
+                GameStates.RANDOMISE_WIRES: 
+                    alufn = b011010   // A
+                    asel = b11            
+                    alu_out_sel = b000
+                    regfile_we = 1 
+                    regfile_wa = d9     
+            }
+        }
+        
+    }
+}

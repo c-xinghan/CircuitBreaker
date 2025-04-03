@@ -1,0 +1,85 @@
+module random_wires (
+    input clk,  // clock
+    input rst,  // reset
+    input io_button[5],
+    output io_segment[8],
+    output io_select[4],
+    output led[8],
+    output io_led[3][8],
+    output wire_order[15] 
+) {
+    enum States {
+        IDLE,
+        SHUFFLE,
+        DONE
+    }
+
+    const CLK_FREQ = $is_sim() ? 1000 : 10000000 // put 1000 for sim, 10000000 otherwise in hardware
+    const CLOCK_DIVIDER = $is_sim() ? 1 : 26
+    const SEVEN_SEG_DIV = $is_sim() ? 3 : 16
+    const WIRE_COUNT = 5
+    
+    sig swap_index[$width(WIRE_COUNT)]
+    sig tmp[3]
+
+    .clk(clk) {
+        button_conditioner io_button_0(.in(io_button[0]), #CLK_FREQ(CLK_FREQ))
+        .rst(rst){
+            counter slow_clk(#SIZE(1), #DIV(CLOCK_DIVIDER))
+            multi_seven_seg seg(#DIV(SEVEN_SEG_DIV))
+            dff states[$width(States)](#INIT(States.IDLE))
+            dff i[3](#INIT(0))
+            dff wires[15](#INIT(c{3d1, 3d2, 3d3, 3d4, 3d5}))
+        }
+        edge_detector button_0_edge(#RISE(1), #FALL(0), .in(io_button_0.out))
+        random_number_generator generator(.slow_clk(slow_clk.value), .refresh(button_0_edge.out))
+    }
+
+    bin_to_dec decimal_renderer(#DIGITS(4), #LEADING_ZEROS(1))    
+    edge_detector edge_detector(#RISE(1), #FALL(1), .clk(clk), .in(slow_clk.value))
+
+    always {
+        wire_order = 0
+        tmp = 0
+        swap_index = 0
+        decimal_renderer.value = 0
+        seg.values = decimal_renderer.digits
+        io_segment = ~seg.seg
+        io_select = ~seg.sel
+        
+        io_led[0] = 8b0
+        io_led[1] = 8b0
+        io_led[2] = 8b0
+        led = 8b0
+        
+        case(states.q){
+            States.IDLE:
+                decimal_renderer.value = 0
+                if (button_0_edge.out){
+                    states.d = States.SHUFFLE
+                }
+
+            States.SHUFFLE:
+                swap_index = generator.out - (generator.out/WIRE_COUNT) * WIRE_COUNT
+                decimal_renderer.value = i.q
+                if (i.q > 4){
+                    states.d = States.DONE
+                }
+                if (edge_detector.out && i.q <= 4){
+                    tmp = wires.q[swap_index*3+:3]
+                    wires.d[swap_index*3+:3] = wires.q[i.q*3+:3]
+                    wires.d[i.q*3+:3] = tmp
+                    i.d = i.q + 1
+                }
+                decimal_renderer.value = wires.q[2:0]
+                
+            States.DONE:
+                decimal_renderer.value = wires.q[2:0]
+                io_led[0] = wires.q[5:3]
+                io_led[1] = wires.q[8:6]
+                io_led[2] = wires.q[11:9]
+                led = wires.q[14:12]
+                wire_order = wires.q
+        }
+    }
+}

@@ -1,0 +1,11 @@
+module modulus #(
+    SIZE = 32 : SIZE > 0
+) (
+    input a[SIZE],
+    input b[SIZE],
+    output out[SIZE]
+) {
+    always {
+        out = a - (a/b) * b
+    }
+}
