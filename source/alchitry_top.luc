@@ -30,13 +30,13 @@ module alchitry_top (
     }
 
     bin_to_dec bin_to_dec_converter(#DIGITS(4))
-    //random_wires random_wires(.clk(clk), .rst(rst), .io_button(io_button))
     
     always {
         reset_cond.in = ~rst_n  // input raw inverted reset signal
         rst = reset_cond.out    // conditioned reset
         
         led = 8h00             // turn LEDs off    
+        led = datapath.round_out
         io_led = 3x{{8b0}}
         io_segment = 8hff          // turn segments off
         io_select = 4hf           // select no digits
@@ -51,8 +51,10 @@ module alchitry_top (
         //update 7segments
         seg.values = 4x{{4b0}} // default to all 0 first
         bin_to_dec_converter.value = datapath.timer_out
-        bin_to_dec_converter.value = datapath.debug_general
-        led = datapath.round_out
+        bin_to_dec_converter.value = datapath.debug_general1
+        io_led[2] = datapath.debug_general2
+        io_led[1] = datapath.debug_general3
+        io_led[0] = datapath.debug_general4
         seg.values = bin_to_dec_converter.digits
         io_segment = ~seg.seg
         io_select = ~seg.sel

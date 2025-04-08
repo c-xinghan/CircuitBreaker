@@ -2,37 +2,59 @@ module cu (
     input clk,  // clock
     input rst,  // reset
     input decrease_timer,
+    input regfile_rd2[32], //direct reading of regfile data from rd2
     
     input button,
     
     output alufn[6],
     output asel[2],
     output bsel[2],
-    output alu_out_sel[3],
-    output regfile_wa[4],
-    output regfile_ra1[4],
+    output alu_out_sel[2],
+    output regfile_wa[5],
+    output regfile_ra1[5],
+    output regfile_ra2[5],
     output regfile_we,
     output debug[32]
 ) {
     
     enum GameStates {
-        INIT,
+        INIT1,
+        INIT2,
+        INIT3,
+        INIT4,
+        INIT5,
         START_ROUND1,
-        RANDOMISE_WIRES
+        GET_RANDOM_J,
+        INCREASE_I,
+        SWAP_WIRES_STEP1,
+        SWAP_WIRES_STEP2,
+        SWAP_WIRES_STEP3,
+        SWAP_WIRES_STEP4,
+        FLASH_LED1,
+        FLASH_LED2,
+        FLASH_LED3,
+        FLASH_LED4,
+        FLASH_LED5,
+        DEBUG1,
+        DEBUG2,
+        DEBUG3,
+        DEBUG4,
+        DEBUG5
     }
     
-    dff fsm[$width(GameStates)](#INIT(GameStates.INIT), .clk(clk), .rst(rst))
+    dff fsm[$width(GameStates)](#INIT(GameStates.INIT1), .clk(clk), .rst(rst))
     
     always {
         
         // standard setting unless otherwise overwritten by each case 
-        alufn = 0
-        asel = 0 
-        bsel = 0
-        regfile_we = 0
-        regfile_wa = d8 
-        regfile_ra1 = d0
-        alu_out_sel = b000
+        alufn = b011010 // A
+        asel = 0 // rd1 output
+        bsel = 0 // rd2 output
+        regfile_we = 0 // write disabled
+        regfile_wa = d8 // temp_1
+        regfile_ra1 = d8 // temp_1
+        regfile_ra2 = d9 // temp_2
+        alu_out_sel = b00 // alufn output
         
         debug = b0000
         
@@ -42,31 +64,200 @@ module cu (
             fsm.d = GameStates.START_ROUND1
         }
         else{
-            
             case(fsm.q){
-                GameStates.INIT:  
-                    alu_out_sel = b100
+                // initialise default wire 1
+                GameStates.INIT1:  
+                    asel = b01
+                    bsel = b10
+                    alufn = b000000            
+                    alu_out_sel = b00
                     regfile_we = 1 
-                    regfile_wa = d8  
+                    regfile_wa = d2 
+                    fsm.d = GameStates.INIT2
+                
+                // initialise default wire 2
+                GameStates.INIT2:  
+                    regfile_ra1 = d2
+                    asel = b00
+                    bsel = b10
+                    alufn = b000000            
+                    alu_out_sel = b00
+                    regfile_we = 1 
+                    regfile_wa = d3 
+                    fsm.d = GameStates.INIT3
+                
+                // initialise default wire 3
+                GameStates.INIT3:  
+                    regfile_ra1 = d3
+                    asel = b00
+                    bsel = b10
+                    alufn = b000000            
+                    alu_out_sel = b00
+                    regfile_we = 1 
+                    regfile_wa = d4
+                    fsm.d = GameStates.INIT4
+
+                // initialise default wire 4
+                GameStates.INIT4:  
+                    regfile_ra1 = d4
+                    asel = b00
+                    bsel = b10
+                    alufn = b000000            
+                    alu_out_sel = b00
+                    regfile_we = 1 
+                    regfile_wa = d5  
+                    fsm.d = GameStates.INIT5
+                
+                // initialise default wire 5
+                GameStates.INIT5:  
+                    regfile_ra1 = d5
+                    asel = b00
+                    bsel = b10
+                    alufn = b000000            
+                    alu_out_sel = b00
+                    regfile_we = 1 
+                    regfile_wa = d6
                     if (button){
                         fsm.d = GameStates.START_ROUND1
                     }
                 
+                // increment round counter
                 GameStates.START_ROUND1: 
-                    alufn = b000000
-                    asel = b0
-                    bsel = b1              
-                    alu_out_sel = b000
+                    asel = b00
+                    bsel = b10
+                    alufn = b000000 // ADD              
+                    alu_out_sel = b00
                     regfile_we = 1 
-                    regfile_wa = d0     
-                    fsm.d = GameStates.RANDOMISE_WIRES
+                    regfile_wa = d0   
+                    fsm.d = GameStates.INCREASE_I
                 
-                GameStates.RANDOMISE_WIRES: 
-                    alufn = b011010   // A
-                    asel = b11            
-                    alu_out_sel = b000
+                // index I is stored in temp_1. It represents the current iteration (1-4) for the Fisher-Yates shuffle.   
+                GameStates.INCREASE_I:
+                    regfile_ra1 = d8
+                    asel = b0
+                    bsel = b10
+                    alufn = b000000 // ADD              
+                    alu_out_sel = b00
                     regfile_we = 1 
-                    regfile_wa = d9     
+                    regfile_wa = d8 // temp_1
+                    fsm.d = GameStates.GET_RANDOM_J 
+                
+                // index J is stored in temp_2. It is randomly generated (1-5)I.
+                GameStates.GET_RANDOM_J:
+                    asel = b11 // pn gen output 
+                    alufn = b011010 // A            
+                    alu_out_sel = b00
+                    regfile_we = 1 
+                    regfile_wa = d9 // temp_2
+                    fsm.d = GameStates.SWAP_WIRES_STEP1
+                
+                // store wire I in temp_3
+                GameStates.SWAP_WIRES_STEP1:
+                    regfile_ra2 = d8
+                    regfile_ra1 = d1 + regfile_rd2
+                    asel = b00        
+                    alufn = b011010 // A   
+                    alu_out_sel = b00
+                    regfile_we = 1 
+                    regfile_wa = d10 // temp_3 
+                    fsm.d = GameStates.SWAP_WIRES_STEP2
+                
+                // store wire J in temp_4
+                GameStates.SWAP_WIRES_STEP2:
+                    regfile_ra2 = d9
+                    regfile_ra1 = d1 + regfile_rd2
+                    asel = b00
+                    alufn = b011010 // A
+                    alu_out_sel = b00
+                    regfile_we = 1 
+                    regfile_wa = d11 // temp_4 
+                    fsm.d = GameStates.SWAP_WIRES_STEP3
+                
+                // assign wire in temp_3 to wire J
+                GameStates.SWAP_WIRES_STEP3:
+                    regfile_ra2 = d9 // temp_2
+                    regfile_ra1 = d10 // temp_3
+                    asel = b00        
+                    alufn = b011010 // A   
+                    alu_out_sel = b00
+                    regfile_we = 1 
+                    regfile_wa = d1 + regfile_rd2 
+                    fsm.d = GameStates.SWAP_WIRES_STEP4
+                
+                // assign wire in temp_4 to wire I
+                GameStates.SWAP_WIRES_STEP4:
+                    regfile_ra2 = d8 // temp_1
+                    regfile_ra1 = d11 // temp_4
+                    asel = b00        
+                    alufn = b011010 // A   
+                    alu_out_sel = b00
+                    regfile_we = 1 
+                    regfile_wa = d1 + regfile_rd2
+                    if (regfile_rd2 < 4){
+                        fsm.d = GameStates.INCREASE_I
+                    } else {
+                        fsm.d = GameStates.FLASH_LED1
+                    }
+                
+                GameStates.FLASH_LED1:
+                    // to continue
+                    regfile_ra1 = d2
+                
+                GameStates.DEBUG1:
+                    regfile_ra1 = d2
+                    asel = b00        
+                    alufn = b011010 // A   
+                    alu_out_sel = b00
+                    regfile_we = 1 
+                    regfile_wa = d11 //temp_4
+                    if (button){
+                        fsm.d = GameStates.DEBUG2
+                    }
+                
+                GameStates.DEBUG2:
+                    regfile_ra1 = d3
+                    asel = b00        
+                    alufn = b011010 // A   
+                    alu_out_sel = b00
+                    regfile_we = 1 
+                    regfile_wa = d11 //temp_4
+                    if (button){
+                        fsm.d = GameStates.DEBUG3
+                    }
+                
+                GameStates.DEBUG3:
+                    regfile_ra1 = d4
+                    asel = b00        
+                    alufn = b011010 // A   
+                    alu_out_sel = b00
+                    regfile_we = 1 
+                    regfile_wa = d11 //temp_4
+                    if (button){
+                        fsm.d = GameStates.DEBUG4
+                    }
+                
+                GameStates.DEBUG4:
+                    regfile_ra1 = d5
+                    asel = b00        
+                    alufn = b011010 // A   
+                    alu_out_sel = b00
+                    regfile_we = 1 
+                    regfile_wa = d11 //temp_4
+                    if (button){
+                        fsm.d = GameStates.DEBUG5
+                    }
+                
+                GameStates.DEBUG5:
+                    regfile_ra1 = d6
+                    asel = b00        
+                    alufn = b011010 // A   
+                    alu_out_sel = b00
+                    regfile_we = 1 
+                    regfile_wa = d11 //temp_4
+                    if (button){
+                        fsm.d = GameStates.DEBUG1
+                    }
+
             }
         }
         

@@ -73,12 +73,6 @@
             },
             {
                 "file": {
-                    "type": "DiskFile",
-                    "path": "source/alu_manual_tester.luc"
-                }
-            },
-            {
-                "file": {
                     "type": "Component",
                     "path": "Miscellaneous/pipeline.luc"
                 }
@@ -152,24 +146,6 @@
             {
                 "file": {
                     "type": "DiskFile",
-                    "path": "source/alu_auto_tester.luc"
-                }
-            },
-            {
-                "file": {
-                    "type": "DiskFile",
-                    "path": "source/autotest_rom.luc"
-                }
-            },
-            {
-                "file": {
-                    "type": "DiskFile",
-                    "path": "source/autotest_rom2.luc"
-                }
-            },
-            {
-                "file": {
-                    "type": "DiskFile",
                     "path": "source/pn_gen.luc"
                 }
             },
@@ -177,12 +153,6 @@
                 "file": {
                     "type": "DiskFile",
                     "path": "source/random_number_generator.luc"
-                }
-            },
-            {
-                "file": {
-                    "type": "DiskFile",
-                    "path": "source/random_wires.luc"
                 }
             },
             {

@@ -2,18 +2,28 @@
 module regfile (
     input clk,  // clock
     input rst,  // reset
-    input wa[4], // write address
+    input wa[5], // write address
     input we, // write enable
     input data[32], // data in
     
-    input ra1[4], // read address port 1
+    input ra1[5], // read address port 1
     output rd1[32], // read data port 1
+    input ra2[5], // read address port 2
+    output rd2[32], // read data port 2
     
     // states
     output current_round[32],
     output current_timer[32],
     output sound[32],
-    output debug[32]
+    output led1[32],
+    output led2[32],
+    output led3[32],
+    output led4[32],
+    output led5[32],
+    output debug1[32],
+    output debug2[32],
+    output debug3[32],
+    output debug4[32]
 ) 
 
 {
@@ -31,6 +41,11 @@ module regfile (
             dff temp_2[32](#INIT(0))
             dff temp_3[32](#INIT(0))
             dff temp_4[32](#INIT(0))
+            dff led_1[32](#INIT(0))
+            dff led_2[32](#INIT(0))
+            dff led_3[32](#INIT(0))
+            dff led_4[32](#INIT(0))
+            dff led_5[32](#INIT(0))
         }
     }
     
@@ -51,6 +66,11 @@ module regfile (
                 d9 : temp_2.d = data
                 d10 : temp_3.d = data
                 d11 : temp_4.d = data
+                d12 : led_1.d = data
+                d13 : led_2.d = data
+                d14 : led_3.d = data
+                d15 : led_4.d = data
+                d16 : led_5.d = data
             }
         }
 
@@ -68,11 +88,46 @@ module regfile (
             d9 : rd1 = temp_2.q
             d10 : rd1 = temp_3.q
             d11 : rd1 = temp_4.q
+            d12 : rd1 = led_1.q
+            d13 : rd1 = led_2.q
+            d14 : rd1 = led_3.q
+            d15 : rd1 = led_4.q
+            d16 : rd1 = led_5.q
             default : rd1 = 0
+        }
+        
+        //read port b
+        case(ra2){
+            d0 : rd2 = round.q
+            d1 : rd2 = seconds_remaining.q
+            d2 : rd2 = wire_1.q
+            d3 : rd2 = wire_2.q
+            d4 : rd2 = wire_3.q
+            d5 : rd2 = wire_4.q
+            d6 : rd2 = wire_5.q
+            d7 : rd2 = buzzer.q
+            d8 : rd2 = temp_1.q
+            d9 : rd2 = temp_2.q
+            d10 : rd2 = temp_3.q
+            d11 : rd2 = temp_4.q
+            d12 : rd2 = led_1.q
+            d13 : rd2 = led_2.q
+            d14 : rd2 = led_3.q
+            d15 : rd2 = led_4.q
+            d16 : rd2 = led_5.q
+            default : rd2 = 0
         }
         current_round = round.q
         current_timer = seconds_remaining.q
         sound = buzzer.q
-        debug = temp_1.q
+        led1 = led_1.q
+        led2 = led_2.q
+        led3 = led_3.q
+        led4 = led_4.q
+        led5 = led_5.q
+        debug1 = temp_4.q
+        debug2 = temp_4.q
+        debug3 = temp_4.q
+        debug4 = temp_4.q
     }
 }

@@ -7,11 +7,19 @@ module datapath#(
     input rst,  // reset
     output round_out[32],
     output timer_out[32],
-    output sound [32],
+    output sound_out[32],
+    output led1_out[32],
+    output led2_out[32],
+    output led3_out[32],
+    output led4_out[32],
+    output led5_out[32],
     output slow_clock_out,
     
     // debug signals
-    output debug_general[32]
+    output debug_general1[32],
+    output debug_general2[32],
+    output debug_general3[32],
+    output debug_general4[32]
 ) {
     //temp variables
     sig input_alu_a[32]
@@ -36,26 +44,30 @@ module datapath#(
             .we(cu.regfile_we), 
             .wa(cu.regfile_wa), 
             .ra1(cu.regfile_ra1), 
+            .ra2(cu.regfile_ra2), 
             .rst(rst)
         )
     }
     always {
+        // bootstrap rd2 output to CU for convenient branching conditions
+        cu.regfile_rd2 = regfile.rd2
+        
         // asel mux
         case(cu.asel){
             b00  : input_alu_a = regfile.rd1
             b01  : input_alu_a = b0
             b10  : input_alu_a = b1
-            b11  : input_alu_a = generator.out - (generator.out/5) * 5
+            b11  : input_alu_a = generator.out - (generator.out/5) * 5 + 1
             default : 
                 input_alu_a = 0
         }
         
         // bsel mux
         case(cu.bsel){
-            b00 : input_alu_b = b0
-            b01 : input_alu_b = b1
-            b10 : input_alu_b = b10
-            b11 : input_alu_b = 0
+            b00 : input_alu_b = regfile.rd2
+            b01 : input_alu_b = b0
+            b10 : input_alu_b = b1
+            b11 : input_alu_b = b10
             default: //necessary to init
                 input_alu_b = 0
             
@@ -72,15 +84,22 @@ module datapath#(
             b01 : regfile.data = h28
             b10 : regfile.data = hF
             b11 : regfile.data = h3C
-            b100 : regfile.data = c{3d1, 3d2, 3d3, 3d4, 3d5}
             default : 
                 regfile.data = alu.out
         }
         
         round_out = regfile.current_round
         timer_out = regfile.current_timer
-        sound = regfile.sound
+        sound_out = regfile.sound
+        led1_out = regfile.led1
+        led2_out = regfile.led2
+        led3_out = regfile.led3
+        led4_out = regfile.led4
+        led5_out = regfile.led5
         slow_clock_out = game_timer_clock.value
-        debug_general = regfile.debug[2:0]
+        debug_general1 = regfile.debug1
+        debug_general2 = regfile.debug2
+        debug_general3 = regfile.debug3
+        debug_general4 = regfile.debug4
     }
 }
