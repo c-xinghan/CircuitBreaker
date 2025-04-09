@@ -172,12 +172,6 @@
                     "type": "DiskFile",
                     "path": "source/cu.luc"
                 }
-            },
-            {
-                "file": {
-                    "type": "DiskFile",
-                    "path": "source/modulus.luc"
-                }
             }
         ],
         "constraintFiles": [

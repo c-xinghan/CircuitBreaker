@@ -37,7 +37,9 @@ module datapath#(
         cu cu(
             .button(button),
             .rst(rst),
-            .decrease_timer(edge_detector_game_timer.out)
+            .decrease_timer(edge_detector_game_timer.out),
+            #SLOW_CLOCK_DIV(SLOW_CLOCK_DIV),
+            #FAST_CLOCK_DIV(FAST_CLOCK_DIV)
         )
         
         regfile regfile(
@@ -49,6 +51,8 @@ module datapath#(
         )
     }
     always {
+        // bootstrap rd1 output to CU for convenient reading operations
+        cu.regfile_rd1 = regfile.rd1
         // bootstrap rd2 output to CU for convenient branching conditions
         cu.regfile_rd2 = regfile.rd2
         
@@ -57,7 +61,7 @@ module datapath#(
             b00  : input_alu_a = regfile.rd1
             b01  : input_alu_a = b0
             b10  : input_alu_a = b1
-            b11  : input_alu_a = generator.out - (generator.out/5) * 5 + 1
+            b11  : input_alu_a = generator.out - (generator.out/4) * 4 + 1
             default : 
                 input_alu_a = 0
         }

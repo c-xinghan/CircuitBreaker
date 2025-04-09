@@ -13,7 +13,6 @@ module alu (
     boolean boolean(#SIZE(32))
     shifter shifter(#SIZE(32))
     multiplier multiplier(#SIZE(32))
-    modulus modulus(#SIZE(32))
     mux_2 mux_2[32]
     mux_4 mux_4[32]
 
@@ -51,10 +50,6 @@ module alu (
             multiplier.a = a
             multiplier.b = b
         
-        // modulus
-            modulus.a = a
-            modulus.b = b
-        
         // output
             compare_out = c{31x{b0}, compare.cmp}
             mux_2.s0 = 32x{alufn[1]}
@@ -64,10 +59,7 @@ module alu (
                 mux_2.in[i] = c{multiplier.mul[i], adder.out[i]}
                 mux_4.in[i] = c{compare_out[i], shifter.shift[i], boolean.bool[i], mux_2.out[i]}
             }
-            if (alufn == b111111){
-                out = modulus.out
-            } else
-                out = mux_4.out
+            out = mux_4.out
         
     }
 }

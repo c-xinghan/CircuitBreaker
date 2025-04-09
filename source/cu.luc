@@ -1,7 +1,11 @@
-module cu (
+module cu #(
+    SLOW_CLOCK_DIV ~ 26 : SLOW_CLOCK_DIV > 0,
+    FAST_CLOCK_DIV ~ 21 : FAST_CLOCK_DIV > 0
+)(
     input clk,  // clock
     input rst,  // reset
     input decrease_timer,
+    input regfile_rd1[32], //direct reading of regfile data from rd2
     input regfile_rd2[32], //direct reading of regfile data from rd2
     
     input button,
@@ -25,12 +29,13 @@ module cu (
         INIT5,
         START_ROUND1,
         GET_RANDOM_J,
-        INCREASE_I,
-        RESET_I,
+        INCREASE_I_SHUFFLE,
         SWAP_WIRES_STEP1,
         SWAP_WIRES_STEP2,
         SWAP_WIRES_STEP3,
         SWAP_WIRES_STEP4,
+        RESET_I,
+        INCREASE_I_FLASH,
         FLASH_LED_ON,
         FLASH_LED_OFF,
         DEBUG1,
@@ -41,6 +46,10 @@ module cu (
     }
     
     dff fsm[$width(GameStates)](#INIT(GameStates.INIT1), .clk(clk), .rst(rst))
+    .clk(clk){
+        counter game_timer_clock(#SIZE(1),#DIV(SLOW_CLOCK_DIV), .rst(rst)) 
+    }
+    edge_detector slow_clock_edge(#RISE(1), #FALL(0), .clk(clk), .in(game_timer_clock.value))
     
     always {
         
@@ -127,10 +136,10 @@ module cu (
                     alu_out_sel = b00
                     regfile_we = 1 
                     regfile_wa = d0   
-                    fsm.d = GameStates.INCREASE_I
+                    fsm.d = GameStates.INCREASE_I_SHUFFLE
                 
-                // index I is stored in temp_1. Here it represents the iteration (1-4) for the Fisher-Yates shuffle.   
-                GameStates.INCREASE_I:
+                // index I is stored in temp_1. Here it represents the iteration (1-5) for the Fisher-Yates shuffle.   
+                GameStates.INCREASE_I_SHUFFLE:
                     regfile_ra1 = d8
                     asel = b0
                     bsel = b10
@@ -152,7 +161,7 @@ module cu (
                 // store wire I in temp_3
                 GameStates.SWAP_WIRES_STEP1:
                     regfile_ra2 = d8
-                    regfile_ra1 = d1 + regfile_rd2
+                    regfile_ra1 = d1 + regfile_rd2 // wire I
                     asel = b00        
                     alufn = b011010 // A   
                     alu_out_sel = b00
@@ -163,7 +172,7 @@ module cu (
                 // store wire J in temp_4
                 GameStates.SWAP_WIRES_STEP2:
                     regfile_ra2 = d9
-                    regfile_ra1 = d1 + regfile_rd2
+                    regfile_ra1 = d1 + regfile_rd2 // wire J
                     asel = b00
                     alufn = b011010 // A
                     alu_out_sel = b00
@@ -192,8 +201,9 @@ module cu (
                     regfile_we = 1 
                     regfile_wa = d1 + regfile_rd2
                     if (regfile_rd2 < 5){
-                        fsm.d = GameStates.INCREASE_I
+                        fsm.d = GameStates.INCREASE_I_SHUFFLE
                     } else {
+                        //fsm.d = GameStates.RESET_I
                         fsm.d = GameStates.DEBUG1
                     }
                 
@@ -204,23 +214,47 @@ module cu (
                 alu_out_sel = b00 // alu output
                 regfile_we = 1
                 regfile_wa = d8
+                fsm.d = GameStates.INCREASE_I_FLASH
+                
+                // index I is stored in temp_1. Here it represents which wire's LED to flash 
+                GameStates.INCREASE_I_FLASH:
+                regfile_ra1 = d8 // temp_1
+                asel = b0 // ra1 output
+                bsel = b10 // 1
+                alufn = b000000 // ADD              
+                alu_out_sel = b00 // alu output
+                regfile_we = 1 
+                regfile_wa = d8 // temp_1
                 fsm.d = GameStates.FLASH_LED_ON
                 
+                // turn on the LED corresponding to the ith wire
                 GameStates.FLASH_LED_ON:
-                    // INCOMPLETE
-                regfile_ra2 = d2 // wire_1
-                regfile_ra1 = d2 // wire_1
-                asel = b00
-                alufn = b011010
-                alu_out_sel = b00
+                regfile_ra2 = d8 // temp_1
+                regfile_ra1 = d1 + regfile_rd2
+                asel = b10 // 1
+                alufn = b011010 // A
+                alu_out_sel = b00 // alu output
                 regfile_we = 1
-                regfile_wa = 1
-                fsm.d = GameStates.FLASH_LED_OFF
-                    
+                regfile_wa = d11 + regfile_rd1
+                if (slow_clock_edge.out){
+                    fsm.d = GameStates.FLASH_LED_OFF
+                }
            
+                // turn off the LED corresponding to the ith wire
                 GameStates.FLASH_LED_OFF:
-                    // INCOMPLETE
-                    regfile_ra1 = d2
+                regfile_ra2 = d8 // temp_1
+                regfile_ra1 = d1 + regfile_rd2
+                asel = b01 // 0
+                alufn = b011010 // A
+                alu_out_sel = b00 // alu output
+                regfile_we = 1
+                regfile_wa = d11 + regfile_rd1
+                if ((slow_clock_edge.out) && (regfile_rd2 < 5)){
+                    fsm.d = GameStates.INCREASE_I_FLASH
+                }
+                //if (button){
+                //    fsm.d = GameStates.DEBUG1
+                //}
                 
                 // store signal to be debugged in temp_4
                 GameStates.DEBUG1:
@@ -275,7 +309,8 @@ module cu (
                     regfile_we = 1 
                     regfile_wa = d11 //temp_4
                     if (button){
-                        fsm.d = GameStates.DEBUG1
+                        //fsm.d = GameStates.DEBUG1
+                        fsm.d = GameStates.RESET_I
                     }
 
             }
