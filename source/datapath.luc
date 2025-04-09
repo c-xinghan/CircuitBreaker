@@ -1,6 +1,8 @@
 module datapath#(
     SLOW_CLOCK_DIV ~ 26 : SLOW_CLOCK_DIV > 0,
-    FAST_CLOCK_DIV ~ 21 : FAST_CLOCK_DIV > 0
+    FAST_CLOCK_DIV ~ 21 : FAST_CLOCK_DIV > 0,
+    FASTER_CLOCK_DIV ~ 16 : FASTER_CLOCK_DIV > 0,
+    FASTEST_CLOCK_DIV ~ 11 : FASTEST_CLOCK_DIV > 0
 )(
     input button,
     input clk,  // clock
@@ -29,15 +31,24 @@ module datapath#(
     .clk(clk){
         counter game_timer_clock(#SIZE(1),#DIV(SLOW_CLOCK_DIV), .rst(rst)) 
         counter fastclock(#SIZE(1),#DIV(FAST_CLOCK_DIV), .rst(rst)) 
+        counter fasterclock(#SIZE(1),#DIV(FASTER_CLOCK_DIV), .rst(rst)) 
+        counter fastestclock(#SIZE(1),#DIV(FASTEST_CLOCK_DIV), .rst(rst)) 
         
         // edge detector declaration & connection with counters
         edge_detector edge_detector_game_timer(#RISE(1), #FALL(0), .in(game_timer_clock.value))
-        random_number_generator generator(.slow_clk(fastclock.value), .refresh(button))
+        edge_detector edge_detector_fast(#RISE(1), #FALL(0), .in(fastclock.value))
+        edge_detector edge_detector_faster(#RISE(1), #FALL(0), .in(fasterclock.value))
+        edge_detector edge_detector_fastest(#RISE(1), #FALL(0), .in(fastestclock.value))
+        
+        random_number_generator generator(.slow_clk(fastestclock.value), .refresh(button))
         
         cu cu(
             .button(button),
             .rst(rst),
             .decrease_timer(edge_detector_game_timer.out),
+            .blink_timer1(edge_detector_fast.out),
+            .blink_timer2(edge_detector_faster.out),
+            .blink_timer3(edge_detector_fastest.out),
             #SLOW_CLOCK_DIV(SLOW_CLOCK_DIV),
             #FAST_CLOCK_DIV(FAST_CLOCK_DIV)
         )
@@ -85,9 +96,9 @@ module datapath#(
         // wdsel mux
         case (cu.alu_out_sel){
             b00 : regfile.data = alu.out
-            b01 : regfile.data = h28
-            b10 : regfile.data = hF
-            b11 : regfile.data = h3C
+            b01 : regfile.data = h3C
+            b10 : regfile.data = h28
+            b11 : regfile.data = hF
             default : 
                 regfile.data = alu.out
         }

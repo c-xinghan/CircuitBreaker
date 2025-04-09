@@ -16,6 +16,8 @@ module alchitry_top (
     const SEVEN_SEG_DIV = $is_sim() ? 3 : 16 // put 3 for sim, 16 for hardware
     const SLOW_CLOCK_DIV = $is_sim() ? 9 : 26 // put 9 for sim, 26 for hardware 
     const FAST_CLOCK_DIV = $is_sim() ? 7 : 21 // put 7 for sim, 21 for hardware 
+    const FASTER_CLOCK_DIV = $is_sim() ? 5 : 16 // put 7 for sim, 21 for hardware 
+    const FASTEST_CLOCK_DIV = $is_sim() ? 3 : 11 // put 7 for sim, 21 for hardware 
     
     .clk(clk) {
         // The reset conditioner is used to synchronize the reset signal to the FPGA
@@ -25,7 +27,8 @@ module alchitry_top (
         button_conditioner btn_cond(#CLK_FREQ(CLK_FREQ))
         .rst(rst){
             multi_seven_seg seg(#DIV(SEVEN_SEG_DIV), #DIGITS(4))
-            datapath datapath(#SLOW_CLOCK_DIV(SLOW_CLOCK_DIV), #FAST_CLOCK_DIV(FAST_CLOCK_DIV))
+            datapath datapath(#SLOW_CLOCK_DIV(SLOW_CLOCK_DIV), #FAST_CLOCK_DIV(FAST_CLOCK_DIV), 
+                #FASTER_CLOCK_DIV(FASTER_CLOCK_DIV), #FASTEST_CLOCK_DIV(FASTEST_CLOCK_DIV))
         }
     }
 
@@ -36,7 +39,12 @@ module alchitry_top (
         rst = reset_cond.out    // conditioned reset
         
         led = 8h00             // turn LEDs off    
-        led = datapath.round_out
+        led[1:0] = datapath.round_out[1:0]
+        led[2] = datapath.led1_out[0]
+        led[3] = datapath.led2_out[0]
+        led[4] = datapath.led3_out[0]
+        led[5] = datapath.led4_out[0]
+        led[6] = datapath.led5_out[0]
         io_led = 3x{{8b0}}
         io_segment = 8hff          // turn segments off
         io_select = 4hf           // select no digits
@@ -51,10 +59,10 @@ module alchitry_top (
         //update 7segments
         seg.values = 4x{{4b0}} // default to all 0 first
         bin_to_dec_converter.value = datapath.timer_out
-        bin_to_dec_converter.value = datapath.debug_general1
-        io_led[2] = datapath.debug_general2
-        io_led[1] = datapath.debug_general3
-        io_led[0] = datapath.debug_general4
+        //bin_to_dec_converter.value = datapath.debug_general1
+        io_led[2] = datapath.debug_general1
+        io_led[1] = datapath.debug_general2
+        io_led[0] = datapath.debug_general3
         seg.values = bin_to_dec_converter.digits
         io_segment = ~seg.seg
         io_select = ~seg.sel

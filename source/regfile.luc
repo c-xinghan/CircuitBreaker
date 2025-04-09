@@ -126,8 +126,8 @@ module regfile (
         led4 = led_4.q
         led5 = led_5.q
         debug1 = temp_4.q
-        debug2 = led_1.q
-        debug3 = led_2.q
-        debug4 = led_3.q
+        debug2 = temp_4.q
+        debug3 = temp_4.q
+        debug4 = temp_4.q
     }
 }

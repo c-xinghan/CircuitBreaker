@@ -5,6 +5,9 @@ module cu #(
     input clk,  // clock
     input rst,  // reset
     input decrease_timer,
+    input blink_timer1,
+    input blink_timer2,
+    input blink_timer3,
     input regfile_rd1[32], //direct reading of regfile data from rd2
     input regfile_rd2[32], //direct reading of regfile data from rd2
     
@@ -38,6 +41,9 @@ module cu #(
         INCREASE_I_FLASH,
         FLASH_LED_ON,
         FLASH_LED_OFF,
+        START_TIMER,
+        IDLE,
+        DECREASE_TIMER,
         DEBUG1,
         DEBUG2,
         DEBUG3,
@@ -46,10 +52,6 @@ module cu #(
     }
     
     dff fsm[$width(GameStates)](#INIT(GameStates.INIT1), .clk(clk), .rst(rst))
-    .clk(clk){
-        counter game_timer_clock(#SIZE(1),#DIV(SLOW_CLOCK_DIV), .rst(rst)) 
-    }
-    edge_detector slow_clock_edge(#RISE(1), #FALL(0), .clk(clk), .in(game_timer_clock.value))
     
     always {
         
@@ -209,52 +211,77 @@ module cu #(
                 
                 // reset temp_1 to 0
                 GameStates.RESET_I:
-                asel = b01 // 0
-                alufn = b011010 // A
-                alu_out_sel = b00 // alu output
-                regfile_we = 1
-                regfile_wa = d8
-                fsm.d = GameStates.INCREASE_I_FLASH
+                    asel = b01 // 0
+                    alufn = b011010 // A
+                    alu_out_sel = b00 // alu output
+                    regfile_we = 1
+                    regfile_wa = d8
+                    fsm.d = GameStates.INCREASE_I_FLASH
                 
                 // index I is stored in temp_1. Here it represents which wire's LED to flash 
                 GameStates.INCREASE_I_FLASH:
-                regfile_ra1 = d8 // temp_1
-                asel = b0 // ra1 output
-                bsel = b10 // 1
-                alufn = b000000 // ADD              
-                alu_out_sel = b00 // alu output
-                regfile_we = 1 
-                regfile_wa = d8 // temp_1
-                fsm.d = GameStates.FLASH_LED_ON
+                    regfile_ra1 = d8 // temp_1
+                    asel = b0 // ra1 output
+                    bsel = b10 // 1
+                    alufn = b000000 // ADD              
+                    alu_out_sel = b00 // alu output
+                    regfile_we = 1 
+                    regfile_wa = d8 // temp_1
+                    fsm.d = GameStates.FLASH_LED_ON
                 
                 // turn on the LED corresponding to the ith wire
                 GameStates.FLASH_LED_ON:
-                regfile_ra2 = d8 // temp_1
-                regfile_ra1 = d1 + regfile_rd2
-                asel = b10 // 1
-                alufn = b011010 // A
-                alu_out_sel = b00 // alu output
-                regfile_we = 1
-                regfile_wa = d11 + regfile_rd1
-                if (slow_clock_edge.out){
-                    fsm.d = GameStates.FLASH_LED_OFF
-                }
+                    regfile_ra2 = d8 // temp_1
+                    regfile_ra1 = d1 + regfile_rd2
+                    asel = b10 // 1
+                    alufn = b011010 // A
+                    alu_out_sel = b00 // alu output
+                    regfile_we = 1
+                    regfile_wa = d11 + regfile_rd1
+                    if (blink_timer1){
+                        fsm.d = GameStates.FLASH_LED_OFF
+                    }
            
                 // turn off the LED corresponding to the ith wire
                 GameStates.FLASH_LED_OFF:
-                regfile_ra2 = d8 // temp_1
-                regfile_ra1 = d1 + regfile_rd2
-                asel = b01 // 0
-                alufn = b011010 // A
-                alu_out_sel = b00 // alu output
-                regfile_we = 1
-                regfile_wa = d11 + regfile_rd1
-                if ((slow_clock_edge.out) && (regfile_rd2 < 5)){
-                    fsm.d = GameStates.INCREASE_I_FLASH
-                }
-                //if (button){
-                //    fsm.d = GameStates.DEBUG1
-                //}
+                    regfile_ra2 = d8 // temp_1
+                    regfile_ra1 = d1 + regfile_rd2
+                    asel = b01 // 0
+                    alufn = b011010 // A
+                    alu_out_sel = b00 // alu output
+                    regfile_we = 1
+                    regfile_wa = d11 + regfile_rd1
+                    if (regfile_rd2 < 5){
+                        fsm.d = GameStates.INCREASE_I_FLASH
+                    }
+                    else {
+                        fsm.d = GameStates.START_TIMER
+                    }
+                    //if (button){
+                    //    fsm.d = GameStates.DEBUG1
+                    //}
+                
+                GameStates.START_TIMER:
+                    regfile_ra2 = d0
+                    alu_out_sel = regfile_rd2[1:0]
+                    regfile_we = 1
+                    regfile_wa = d1
+                    fsm.d = GameStates.IDLE
+                    
+                GameStates.IDLE:
+                    if (decrease_timer){
+                        fsm.d = GameStates.DECREASE_TIMER
+                    }
+                
+                GameStates.DECREASE_TIMER:
+                    regfile_ra1 = d1 // seconds remaining
+                    asel = b0 // ra1 output
+                    bsel = b10 // 1
+                    alufn = b000001 // SUB              
+                    alu_out_sel = b00 // alu output
+                    regfile_we = 1 
+                    regfile_wa = d1 // temp_1
+                    fsm.d = GameStates.IDLE
                 
                 // store signal to be debugged in temp_4
                 GameStates.DEBUG1:
