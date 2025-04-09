@@ -26,15 +26,13 @@ module cu (
         START_ROUND1,
         GET_RANDOM_J,
         INCREASE_I,
+        RESET_I,
         SWAP_WIRES_STEP1,
         SWAP_WIRES_STEP2,
         SWAP_WIRES_STEP3,
         SWAP_WIRES_STEP4,
-        FLASH_LED1,
-        FLASH_LED2,
-        FLASH_LED3,
-        FLASH_LED4,
-        FLASH_LED5,
+        FLASH_LED_ON,
+        FLASH_LED_OFF,
         DEBUG1,
         DEBUG2,
         DEBUG3,
@@ -131,7 +129,7 @@ module cu (
                     regfile_wa = d0   
                     fsm.d = GameStates.INCREASE_I
                 
-                // index I is stored in temp_1. It represents the current iteration (1-4) for the Fisher-Yates shuffle.   
+                // index I is stored in temp_1. Here it represents the iteration (1-4) for the Fisher-Yates shuffle.   
                 GameStates.INCREASE_I:
                     regfile_ra1 = d8
                     asel = b0
@@ -190,19 +188,41 @@ module cu (
                     regfile_ra1 = d11 // temp_4
                     asel = b00        
                     alufn = b011010 // A   
-                    alu_out_sel = b00
+                    alu_out_sel = b00 
                     regfile_we = 1 
                     regfile_wa = d1 + regfile_rd2
-                    if (regfile_rd2 < 4){
+                    if (regfile_rd2 < 5){
                         fsm.d = GameStates.INCREASE_I
                     } else {
-                        fsm.d = GameStates.FLASH_LED1
+                        fsm.d = GameStates.DEBUG1
                     }
                 
-                GameStates.FLASH_LED1:
-                    // to continue
+                // reset temp_1 to 0
+                GameStates.RESET_I:
+                asel = b01 // 0
+                alufn = b011010 // A
+                alu_out_sel = b00 // alu output
+                regfile_we = 1
+                regfile_wa = d8
+                fsm.d = GameStates.FLASH_LED_ON
+                
+                GameStates.FLASH_LED_ON:
+                    // INCOMPLETE
+                regfile_ra2 = d2 // wire_1
+                regfile_ra1 = d2 // wire_1
+                asel = b00
+                alufn = b011010
+                alu_out_sel = b00
+                regfile_we = 1
+                regfile_wa = 1
+                fsm.d = GameStates.FLASH_LED_OFF
+                    
+           
+                GameStates.FLASH_LED_OFF:
+                    // INCOMPLETE
                     regfile_ra1 = d2
                 
+                // store signal to be debugged in temp_4
                 GameStates.DEBUG1:
                     regfile_ra1 = d2
                     asel = b00        
