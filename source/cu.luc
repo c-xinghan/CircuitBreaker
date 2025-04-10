@@ -327,7 +327,7 @@ module cu #(
                 // wait for decrease_timer or user input
                 GameStates.IDLE:
                     if (decrease_timer){
-                        fsm.d = GameStates.CHECK_TIMER
+                        fsm.d = GameStates.DECREASE_TIMER
                     }
                 
                 // checks if seconds_remaining < 1 and stores the result in temp_3
@@ -347,7 +347,7 @@ module cu #(
                     if (regfile_rd2){
                         fsm.d = GameStates.GAME_OVER
                     } else {
-                        fsm.d = GameStates.DECREASE_TIMER
+                        fsm.d = GameStates.BEEP_BUZZER_ON
                     }
                 
                 // endless beep
@@ -370,7 +370,7 @@ module cu #(
                     alu_out_sel = b00 // alu output
                     regfile_we = 1 
                     regfile_wa = d1 // seconds remaining
-                    fsm.d = GameStates.BEEP_BUZZER_ON
+                    fsm.d = GameStates.CHECK_TIMER
                 
                 // turn on buzzer
                 GameStates.BEEP_BUZZER_ON:

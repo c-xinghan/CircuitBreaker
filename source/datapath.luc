@@ -10,18 +10,11 @@ module datapath#(
     output round_out[32],
     output timer_out[32],
     output sound_out[32],
-    output led1_out[32],
-    output led2_out[32],
-    output led3_out[32],
-    output led4_out[32],
-    output led5_out[32],
+    output led_out[5][32],
     output slow_clock_out,
     
     // debug signals
-    output debug_general1[32],
-    output debug_general2[32],
-    output debug_general3[32],
-    output debug_general4[32]
+    output debug_general[4][32]
 ) {
     //temp variables
     sig input_alu_a[32]
@@ -30,7 +23,7 @@ module datapath#(
     alu alu
     .clk(clk){
         counter game_timer_clock(#SIZE(1),#DIV(SLOW_CLOCK_DIV), .rst(rst)) 
-        counter fastclock(#SIZE(1),#DIV(FAST_CLOCK_DIV), .rst(rst)) 
+        counter fastclock(#SIZE(1),#DIV(FAST_CLOCK_DIV), .rst(rst))  
         counter fasterclock(#SIZE(1),#DIV(FASTER_CLOCK_DIV), .rst(rst)) 
         counter fastestclock(#SIZE(1),#DIV(FASTEST_CLOCK_DIV), .rst(rst)) 
         
@@ -106,15 +99,8 @@ module datapath#(
         round_out = regfile.current_round
         timer_out = regfile.current_timer
         sound_out = regfile.sound
-        led1_out = regfile.led1
-        led2_out = regfile.led2
-        led3_out = regfile.led3
-        led4_out = regfile.led4
-        led5_out = regfile.led5
+        led_out = regfile.led
         slow_clock_out = game_timer_clock.value
-        debug_general1 = regfile.debug1
-        debug_general2 = regfile.debug2
-        debug_general3 = regfile.debug3
-        debug_general4 = regfile.debug4
+        debug_general = regfile.debug
     }
 }

@@ -15,15 +15,8 @@ module regfile (
     output current_round[32],
     output current_timer[32],
     output sound[32],
-    output led1[32],
-    output led2[32],
-    output led3[32],
-    output led4[32],
-    output led5[32],
-    output debug1[32],
-    output debug2[32],
-    output debug3[32],
-    output debug4[32]
+    output led[5][32],
+    output debug[4][32]
 ) 
 
 {
@@ -120,14 +113,14 @@ module regfile (
         current_round = round.q
         current_timer = seconds_remaining.q
         sound = buzzer.q
-        led1 = led_1.q
-        led2 = led_2.q
-        led3 = led_3.q
-        led4 = led_4.q
-        led5 = led_5.q
-        debug1 = temp_4.q
-        debug2 = temp_4.q
-        debug3 = temp_4.q
-        debug4 = temp_4.q
+        led[0] = led_1.q
+        led[1] = led_2.q
+        led[2] = led_3.q
+        led[3] = led_4.q
+        led[4] = led_5.q
+        debug[0] = temp_4.q
+        debug[1] = temp_4.q
+        debug[2] = temp_4.q
+        debug[3] = temp_4.q
     }
 }
