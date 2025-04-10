@@ -1,3 +1,4 @@
+/*
 module multiplier #(
     SIZE = 32 : SIZE > 0
 )(
@@ -59,3 +60,4 @@ module multiplier #(
         mul[31] = fa.s[495] 
     }
 }
+*/

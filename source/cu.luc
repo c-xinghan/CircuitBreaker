@@ -51,6 +51,9 @@ module cu #(
         BRANCH_TIMER,
         GAME_OVER,
         DECREASE_TIMER,
+        BEEP_BUZZER_ON,
+        BEEP_BUZZER_OFF,
+        PAUSE,
         DEBUG1,
         DEBUG2,
         DEBUG3,
@@ -228,7 +231,8 @@ module cu #(
                     if (regfile_rd2){
                         fsm.d = GameStates.INCREASE_I_SHUFFLE
                     } else {
-                        fsm.d = GameStates.DEBUG1
+                        // fsm.d = GameStates.DEBUG1
+                        fsm.d = GameStates.RESET_I
                     }
                 
                 // reset temp_1 to 0
@@ -237,8 +241,13 @@ module cu #(
                     alufn = b011010 // A
                     alu_out_sel = b00 // alu output
                     regfile_we = 1
-                    regfile_wa = d8
-                    fsm.d = GameStates.INCREASE_I_FLASH
+                    regfile_wa = d8 // temp_1
+                    fsm.d = GameStates.PAUSE
+                
+                GameStates.PAUSE:
+                    if (blink_timer1){
+                        fsm.d = GameStates.INCREASE_I_FLASH
+                    }
                 
                 // index I is stored in temp_1. Here it represents which wire's LED to flash 
                 GameStates.INCREASE_I_FLASH:
@@ -250,6 +259,7 @@ module cu #(
                     regfile_we = 1 
                     regfile_wa = d8 // temp_1
                     fsm.d = GameStates.FLASH_LED_ON
+                    
                 
                 // turn on the LED corresponding to the ith wire
                 GameStates.FLASH_LED_ON:
@@ -280,7 +290,7 @@ module cu #(
                     regfile_ra1 = d8 // temp_1
                     asel = b00 // rd1 output
                     bsel = b11 // 5
-                    alufn = b110101 // CMPLT   
+                    alufn = b110111 // CMPLE   
                     alu_out_sel = b00
                     regfile_we = 1
                     regfile_wa = d10 // temp_3
@@ -317,7 +327,7 @@ module cu #(
                         fsm.d = GameStates.CHECK_TIMER
                     }
                 
-                // checks if seconds_remaining < 0 and stores the result in temp_3
+                // checks if seconds_remaining < 1 and stores the result in temp_3
                 GameStates.CHECK_TIMER:
                     regfile_ra1 = d1 // seconds_remaining
                     asel = b00 // rd1 output
@@ -328,6 +338,7 @@ module cu #(
                     regfile_wa = d10 // temp_3
                     fsm.d = GameStates.BRANCH_TIMER
                 
+                // branches to game_over if seconds_remaining < 1, else branches to decrease_timer
                 GameStates.BRANCH_TIMER:
                     regfile_ra2 = d10 // temp_3
                     if (regfile_rd2){
@@ -336,6 +347,7 @@ module cu #(
                         fsm.d = GameStates.DECREASE_TIMER
                     }
                 
+                // endless beep
                 GameStates.GAME_OVER:
                     regfile_ra2 = d8 // temp_1
                     regfile_ra1 = d1 + regfile_rd2
@@ -346,6 +358,7 @@ module cu #(
                     regfile_wa = d7 // buzzer                
                     fsm.d = GameStates.GAME_OVER
                 
+                // decrement seconds_remaining by 1
                 GameStates.DECREASE_TIMER:
                     regfile_ra1 = d1 // seconds remaining
                     asel = b0 // ra1 output
@@ -353,7 +366,25 @@ module cu #(
                     alufn = b000001 // SUB              
                     alu_out_sel = b00 // alu output
                     regfile_we = 1 
-                    regfile_wa = d1 // temp_1
+                    regfile_wa = d1 // seconds remaining
+                    fsm.d = GameStates.IDLE
+                
+                // turn on buzzer
+                GameStates.BEEP_BUZZER_ON:
+                    asel = b10 // 1
+                    alufn = b011010 // A
+                    regfile_we = 1 
+                    regfile_wa = d7 // buzzer
+                    if (blink_timer1){
+                        fsm.d = GameStates.BEEP_BUZZER_OFF
+                    }
+                
+                // turn off buzzer
+                GameStates.BEEP_BUZZER_OFF:
+                    asel = b01 // 0
+                    alufn = b011010 // A
+                    regfile_we = 1 
+                    regfile_wa = d7 // buzzer
                     fsm.d = GameStates.IDLE
                 
                 // store signal to be debugged in temp_4
@@ -409,8 +440,8 @@ module cu #(
                     regfile_we = 1 
                     regfile_wa = d11 //temp_4
                     if (button){
-                        //fsm.d = GameStates.DEBUG1
-                        fsm.d = GameStates.RESET_I
+                        fsm.d = GameStates.DEBUG1
+                        //fsm.d = GameStates.RESET_I
                     }
 
             }
