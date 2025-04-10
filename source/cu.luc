@@ -12,6 +12,7 @@ module cu #(
     input regfile_rd2[32], //direct reading of regfile data from rd2
     
     input button,
+    input wire[5],
     
     output alufn[6],
     output asel[2],
@@ -314,9 +315,10 @@ module cu #(
                     regfile_wa = d1
                     */
                     // TODO: replace with above in final version
-                    bsel = b11 // 5
-                    alufn = b011100 // B
-                    alu_out_sel = b00
+                    //bsel = b11 // 5
+                    //alufn = b011100 // B
+                    //alu_out_sel = b00
+                    alu_out_sel = b01 // round
                     regfile_we = 1
                     regfile_wa = d1
                     // end TODO
@@ -328,6 +330,8 @@ module cu #(
                 GameStates.IDLE:
                     if (decrease_timer){
                         fsm.d = GameStates.DECREASE_TIMER
+                    } else if (wire){
+                        fsm.d = GameStates.DEBUG1
                     }
                 
                 // checks if seconds_remaining < 1 and stores the result in temp_3
@@ -378,7 +382,13 @@ module cu #(
                     alufn = b011010 // A
                     regfile_we = 1 
                     regfile_wa = d7 // buzzer
-                    if (blink_timer1){
+                    if (wire){
+                        asel = b01 // 0
+                        alufn = b011010 // A
+                        regfile_we = 1 
+                        regfile_wa = d7 // buzzer
+                        fsm.d = GameStates.DEBUG1
+                    } else if (blink_timer1){
                         fsm.d = GameStates.BEEP_BUZZER_OFF
                     }
                 
@@ -443,7 +453,7 @@ module cu #(
                     regfile_we = 1 
                     regfile_wa = d11 //temp_4
                     if (button){
-                        fsm.d = GameStates.DEBUG1
+                        fsm.d = GameStates.IDLE
                         //fsm.d = GameStates.RESET_I
                     }
 

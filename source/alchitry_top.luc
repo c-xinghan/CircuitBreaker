@@ -25,6 +25,8 @@ module alchitry_top (
         reset_conditioner reset_cond
         edge_detector edge_dt_btn (#RISE(1), #FALL(0))
         button_conditioner btn_cond(#CLK_FREQ(CLK_FREQ))
+        edge_detector edge_dt_wire[5](#RISE(5x{{0}}), #FALL(5x{{1}}))
+        button_conditioner wire_cond[5](#CLK_FREQ(5x{{CLK_FREQ}}))
         .rst(rst){
             multi_seven_seg seg(#DIV(SEVEN_SEG_DIV), #DIGITS(4))
             datapath datapath(#SLOW_CLOCK_DIV(SLOW_CLOCK_DIV), #FAST_CLOCK_DIV(FAST_CLOCK_DIV), 
@@ -53,7 +55,11 @@ module alchitry_top (
         btn_cond.in = io_button[0] //to reduce the bouncing effects of your button
         edge_dt_btn.in = btn_cond.out //get the edge of button press
         
+        wire_cond.in = io_dip[0][4:0]
+        edge_dt_wire.in = wire_cond.out
+        
         datapath.button = edge_dt_btn.out
+        datapath.wire = edge_dt_wire.out
         
         //update 7segments
         seg.values = 4x{{4b0}} // default to all 0 first
