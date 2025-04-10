@@ -315,11 +315,14 @@ module cu #(
                     */
                     // TODO: replace with above in final version
                     bsel = b11 // 5
-                    alufn = b011100
+                    alufn = b011100 // B
                     alu_out_sel = b00
                     regfile_we = 1
                     regfile_wa = d1
-                    fsm.d = GameStates.IDLE
+                    // end TODO
+                    if (blink_timer1){
+                        fsm.d = GameStates.IDLE
+                    }
                     
                 // wait for decrease_timer or user input
                 GameStates.IDLE:
@@ -367,7 +370,7 @@ module cu #(
                     alu_out_sel = b00 // alu output
                     regfile_we = 1 
                     regfile_wa = d1 // seconds remaining
-                    fsm.d = GameStates.IDLE
+                    fsm.d = GameStates.BEEP_BUZZER_ON
                 
                 // turn on buzzer
                 GameStates.BEEP_BUZZER_ON:
