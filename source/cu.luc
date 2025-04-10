@@ -37,12 +37,19 @@ module cu #(
         SWAP_WIRES_STEP2,
         SWAP_WIRES_STEP3,
         SWAP_WIRES_STEP4,
+        CHECK_RANDOM_WIRE,
+        BRANCH_RANDOM_WIRE,
         RESET_I,
         INCREASE_I_FLASH,
         FLASH_LED_ON,
         FLASH_LED_OFF,
+        CHECK_FLASH_LED,
+        BRANCH_FLASH_LED,
         START_TIMER,
         IDLE,
+        CHECK_TIMER,
+        BRANCH_TIMER,
+        GAME_OVER,
         DECREASE_TIMER,
         DEBUG1,
         DEBUG2,
@@ -202,10 +209,25 @@ module cu #(
                     alu_out_sel = b00 
                     regfile_we = 1 
                     regfile_wa = d1 + regfile_rd2
-                    if (regfile_rd2 < 5){
+                    fsm.d = GameStates.CHECK_RANDOM_WIRE
+                
+                // checks if index I < 5 and stores the result in temp_3
+                GameStates.CHECK_RANDOM_WIRE:
+                    regfile_ra1 = d8 // temp_1
+                    asel = b00 // rd1 output
+                    bsel = b11 // 5
+                    alufn = b110101 // CMPLT   
+                    alu_out_sel = b00 
+                    regfile_we = 1
+                    regfile_wa = d10 // temp_3
+                    fsm.d = GameStates.BRANCH_RANDOM_WIRE
+                    
+                // branches back to increase_i_shuffle if I < 5, else proceeds forward
+                GameStates.BRANCH_RANDOM_WIRE:
+                    regfile_ra2 = d10 // temp_3
+                    if (regfile_rd2){
                         fsm.d = GameStates.INCREASE_I_SHUFFLE
                     } else {
-                        //fsm.d = GameStates.RESET_I
                         fsm.d = GameStates.DEBUG1
                     }
                 
@@ -224,7 +246,7 @@ module cu #(
                     asel = b0 // ra1 output
                     bsel = b10 // 1
                     alufn = b000000 // ADD              
-                    alu_out_sel = b00 // alu output
+                    alu_out_sel = b00
                     regfile_we = 1 
                     regfile_wa = d8 // temp_1
                     fsm.d = GameStates.FLASH_LED_ON
@@ -235,7 +257,7 @@ module cu #(
                     regfile_ra1 = d1 + regfile_rd2
                     asel = b10 // 1
                     alufn = b011010 // A
-                    alu_out_sel = b00 // alu output
+                    alu_out_sel = b00
                     regfile_we = 1
                     regfile_wa = d11 + regfile_rd1
                     if (blink_timer1){
@@ -248,30 +270,81 @@ module cu #(
                     regfile_ra1 = d1 + regfile_rd2
                     asel = b01 // 0
                     alufn = b011010 // A
-                    alu_out_sel = b00 // alu output
+                    alu_out_sel = b00
                     regfile_we = 1
                     regfile_wa = d11 + regfile_rd1
-                    if (regfile_rd2 < 5){
+                    fsm.d = GameStates.CHECK_FLASH_LED
+                
+                // checks if index I < 5 and stores the result in temp_3
+                GameStates.CHECK_FLASH_LED:
+                    regfile_ra1 = d8 // temp_1
+                    asel = b00 // rd1 output
+                    bsel = b11 // 5
+                    alufn = b110101 // CMPLT   
+                    alu_out_sel = b00
+                    regfile_we = 1
+                    regfile_wa = d10 // temp_3
+                    fsm.d = GameStates.BRANCH_FLASH_LED
+                
+                // branches back to increase_i_flash if I < 5, else proceeds forward
+                GameStates.BRANCH_FLASH_LED:
+                    regfile_ra2 = d10 // temp_3
+                    if (regfile_rd2){
                         fsm.d = GameStates.INCREASE_I_FLASH
-                    }
-                    else {
+                    } else {
                         fsm.d = GameStates.START_TIMER
                     }
-                    //if (button){
-                    //    fsm.d = GameStates.DEBUG1
-                    //}
                 
+                // sets seconds_remaining to a timer duration hardcoded in alu_out_sel 
                 GameStates.START_TIMER:
-                    regfile_ra2 = d0
-                    alu_out_sel = regfile_rd2[1:0]
+                    /*
+                    regfile_ra2 = d0 // round
+                    alu_out_sel = regfile_rd2[1:0] // round
+                    regfile_we = 1
+                    regfile_wa = d1
+                    */
+                    // TODO: replace with above in final version
+                    bsel = b11 // 5
+                    alufn = b011100
+                    alu_out_sel = b00
                     regfile_we = 1
                     regfile_wa = d1
                     fsm.d = GameStates.IDLE
                     
+                // wait for decrease_timer or user input
                 GameStates.IDLE:
                     if (decrease_timer){
+                        fsm.d = GameStates.CHECK_TIMER
+                    }
+                
+                // checks if seconds_remaining < 0 and stores the result in temp_3
+                GameStates.CHECK_TIMER:
+                    regfile_ra1 = d1 // seconds_remaining
+                    asel = b00 // rd1 output
+                    bsel = b10 // 1
+                    alufn = b110101 // CMPLT   
+                    alu_out_sel = b00
+                    regfile_we = 1
+                    regfile_wa = d10 // temp_3
+                    fsm.d = GameStates.BRANCH_TIMER
+                
+                GameStates.BRANCH_TIMER:
+                    regfile_ra2 = d10 // temp_3
+                    if (regfile_rd2){
+                        fsm.d = GameStates.GAME_OVER
+                    } else {
                         fsm.d = GameStates.DECREASE_TIMER
                     }
+                
+                GameStates.GAME_OVER:
+                    regfile_ra2 = d8 // temp_1
+                    regfile_ra1 = d1 + regfile_rd2
+                    asel = b10 // 1
+                    alufn = b011010 // A
+                    alu_out_sel = b00
+                    regfile_we = 1
+                    regfile_wa = d7 // buzzer                
+                    fsm.d = GameStates.GAME_OVER
                 
                 GameStates.DECREASE_TIMER:
                     regfile_ra1 = d1 // seconds remaining

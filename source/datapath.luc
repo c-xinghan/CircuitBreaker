@@ -82,7 +82,7 @@ module datapath#(
             b00 : input_alu_b = regfile.rd2
             b01 : input_alu_b = b0
             b10 : input_alu_b = b1
-            b11 : input_alu_b = b10
+            b11 : input_alu_b = b101
             default: //necessary to init
                 input_alu_b = 0
             

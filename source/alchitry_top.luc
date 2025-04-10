@@ -45,6 +45,7 @@ module alchitry_top (
         led[4] = datapath.led3_out[0]
         led[5] = datapath.led4_out[0]
         led[6] = datapath.led5_out[0]
+        led[7] = datapath.sound_out
         io_led = 3x{{8b0}}
         io_segment = 8hff          // turn segments off
         io_select = 4hf           // select no digits
