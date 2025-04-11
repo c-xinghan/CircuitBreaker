@@ -5,7 +5,7 @@ module datapath#(
     FASTEST_CLOCK_DIV ~ 11 : FASTEST_CLOCK_DIV > 0
 )(
     input button,
-    input wire[5],
+    input wires[5],
     input clk,  // clock
     input rst,  // reset
     output round_out[32],
@@ -38,7 +38,7 @@ module datapath#(
         
         cu cu(
             .button(button),
-            .wire(wire),
+            .wires(wires),
             .rst(rst),
             .decrease_timer(edge_detector_game_timer.out),
             .blink_timer1(edge_detector_fast.out),

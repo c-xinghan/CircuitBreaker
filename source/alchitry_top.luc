@@ -59,7 +59,7 @@ module alchitry_top (
         edge_dt_wire.in = wire_cond.out
         
         datapath.button = edge_dt_btn.out
-        datapath.wire = edge_dt_wire.out
+        datapath.wires = edge_dt_wire.out
         
         //update 7segments
         seg.values = 4x{{4b0}} // default to all 0 first
