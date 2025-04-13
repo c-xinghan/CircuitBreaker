@@ -52,6 +52,7 @@ module cu #(
         SET_TIMER,
         PROCEED_TO_GAME,
         SET_INPROGRESS,
+        SET_CORRECT_WIRE,
         IDLE,
         CHECK_TIMER,
         BRANCH_TIMER,
@@ -354,12 +355,26 @@ module cu #(
                         fsm.d = GameStates.SET_INPROGRESS
                     }
                 
+                // round_inprogress indicates that a round is in progress
                 GameStates.SET_INPROGRESS:
-                    asel = b010 // 1
-                    alufn = b011010 // A
+                    regfile_ra1 = d17 // round_inprogress
+                    asel = b000 // rd1 output
+                    alufn = b000010 // NOT
                     alu_out_sel = b00 // alu output
                     regfile_we = 1
                     regfile_wa = d17 // round_inprogress
+                    fsm.d = GameStates.SET_CORRECT_WIRE
+                                
+                // store (correct_wire - 1) in temp_4 where correct_wire = value stored at d1 + i
+                GameStates.SET_CORRECT_WIRE:
+                    regfile_ra2 = d8 // temp_1
+                    regfile_ra1 = d1 + regfile_rd2 // wire_i
+                    asel = b000 // rd1 output 
+                    bsel = b10 // 1
+                    alufn = b000001 // SUB
+                    alu_out_sel = b00 // alu output
+                    regfile_we = 1
+                    regfile_wa = d11 // temp_4
                     fsm.d = GameStates.IDLE
                     
                 // wait for decrease_timer or user input
@@ -397,18 +412,6 @@ module cu #(
                     alu_out_sel = b00 // alu output
                     regfile_we = 1
                     regfile_wa = d9 // temp_2
-                    fsm.d = GameStates.CHECK_WIRE_PULL_STEP_1
-                                
-                // store (correct_wire - 1) in temp_4 where correct_wire = value stored at d1 + i
-                GameStates.CHECK_WIRE_PULL_STEP_1:
-                    regfile_ra2 = d8 // temp_1
-                    regfile_ra1 = d1 + regfile_rd2 // wire_i
-                    asel = b000 // rd1 output 
-                    bsel = b10 // 1
-                    alufn = b000001 // SUB
-                    alu_out_sel = b00 // alu output
-                    regfile_we = 1
-                    regfile_wa = d11 // temp_4
                     fsm.d = GameStates.CHECK_WIRE_PULL_STEP_2
                 
                 // SHR temp_3 by temp_4 bits and store in temp_3. If the correct wire is pulled, temp_3 should be 1.
@@ -477,6 +480,13 @@ module cu #(
                 GameStates.BRANCH_WIN_ROUND:
                     regfile_ra2 = d10 // temp_3
                     if (regfile_rd2){
+                        // toggle round_inprogress to 0
+                        regfile_ra1 = d17 // round_inprogress
+                        asel = b000 // rd1 output
+                        alufn = b000010 // NOT
+                        alu_out_sel = b00 // alu output
+                        regfile_we = 1
+                        regfile_wa = d17 // round_inprogress
                         fsm.d = GameStates.WIN_ROUND
                     } else {
                         regfile_ra1 = d8 // temp_1
@@ -485,7 +495,7 @@ module cu #(
                         alufn = b000000 // ADD
                         regfile_we = 1 
                         regfile_wa = d8 // temp_1
-                        fsm.d = GameStates.IDLE
+                        fsm.d = GameStates.SET_CORRECT_WIRE
                     }
                 
                 // initialise index I (temp_1) to 0. Here, I keeps track of the number of buzzer beeps.
@@ -527,7 +537,7 @@ module cu #(
                     regfile_wa = d9 // temp_2
                     fsm.d = GameStates.BRANCH_WIN_ROUND_BEEP
                 
-                // if beeped 3 times, start new round. else, increment I and continue beeping.
+                // if beeped 3 times, wait to start new round. else, increment I and continue beeping.
                 GameStates.BRANCH_WIN_ROUND_BEEP:
                     regfile_ra2 = d9
                     if (regfile_rd2){
@@ -538,6 +548,7 @@ module cu #(
                         }
                     }
                 
+                // reset timer to 0 before starting new round
                 GameStates.START_ROUND_RESET_TIMER:
                     asel = b01 // 0 
                     alufn = b011010 // A

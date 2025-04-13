@@ -1,0 +1,11 @@
+module not_opr #(
+    SIZE = 32 : SIZE > 0
+)(
+    input a[SIZE],
+    input b[SIZE],
+    output out[SIZE]
+) {
+    always {
+        out = ~a
+    }
+}
