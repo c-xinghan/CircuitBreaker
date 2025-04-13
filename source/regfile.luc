@@ -11,11 +11,12 @@ module regfile (
     input ra2[5], // read address port 2
     output rd2[32], // read data port 2
     
-    // states
+    // always out
     output current_round[32],
     output current_timer[32],
     output sound[32],
     output led[5][32],
+    output temp_1_out[32],
     output debug[4][32]
 ) 
 
@@ -39,6 +40,7 @@ module regfile (
             dff led_3[32](#INIT(0))
             dff led_4[32](#INIT(0))
             dff led_5[32](#INIT(0))
+            dff round_inprogress[32](#INIT(0))
         }
     }
     
@@ -64,6 +66,7 @@ module regfile (
                 d14 : led_3.d = data
                 d15 : led_4.d = data
                 d16 : led_5.d = data
+                d17 : round_inprogress.d = data
             }
         }
 
@@ -86,6 +89,7 @@ module regfile (
             d14 : rd1 = led_3.q
             d15 : rd1 = led_4.q
             d16 : rd1 = led_5.q
+            d17 : rd1 = round_inprogress.q
             default : rd1 = 0
         }
         
@@ -108,6 +112,7 @@ module regfile (
             d14 : rd2 = led_3.q
             d15 : rd2 = led_4.q
             d16 : rd2 = led_5.q
+            d17 : rd2 = round_inprogress.q
             default : rd2 = 0
         }
         current_round = round.q
@@ -118,9 +123,10 @@ module regfile (
         led[2] = led_3.q
         led[3] = led_4.q
         led[4] = led_5.q
+        temp_1_out = temp_1.q
         debug[0] = temp_4.q
-        debug[1] = temp_4.q
-        debug[2] = temp_4.q
-        debug[3] = temp_4.q
+        debug[1] = temp_3.q
+        debug[2] = temp_1.q
+        debug[3] = temp_2.q
     }
 }

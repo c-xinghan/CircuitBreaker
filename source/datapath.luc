@@ -6,6 +6,7 @@ module datapath#(
 )(
     input button,
     input wires[5],
+    input wires_edge[5],
     input clk,  // clock
     input rst,  // reset
     output round_out[32],
@@ -39,6 +40,7 @@ module datapath#(
         cu cu(
             .button(button),
             .wires(wires),
+            .wires_edge(wires_edge),
             .rst(rst),
             .decrease_timer(edge_detector_game_timer.out),
             .blink_timer1(edge_detector_fast.out),
@@ -64,10 +66,12 @@ module datapath#(
         
         // asel mux
         case(cu.asel){
-            b00  : input_alu_a = regfile.rd1
-            b01  : input_alu_a = b0
-            b10  : input_alu_a = b1
-            b11  : input_alu_a = generator.out - (generator.out/4) * 4 + 1
+            b000  : input_alu_a = regfile.rd1
+            b001  : input_alu_a = b0
+            b010  : input_alu_a = b1
+            b011  : input_alu_a = generator.out - (generator.out/4) * 4 + 1
+            b100  : input_alu_a = wires
+            b101  : input_alu_a = wires_edge
             default : 
                 input_alu_a = 0
         }
