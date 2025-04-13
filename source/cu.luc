@@ -62,14 +62,10 @@ module cu #(
         BEEP_BUZZER_ON,
         BEEP_BUZZER_OFF,
         BEEP_BUZZER_OFF_AND_CHECK_WIRE_PULL,
-        DECREASE_TIMER_AND_PREPARE_ANTICHEAT,
-        PREPARE_ANTICHEAT,
+        DECREASE_TIMER_AND_CHECK_WIRE_PULL,
         CHECK_WIRE_PULL_STEP_1,
         CHECK_WIRE_PULL_STEP_2,
-        CHECK_WIRE_PULL_STEP_3,
         BRANCH_WIRE_PULL,
-        ANTICHEAT,
-        BRANCH_ANTICHEAT,
         BRANCH_WIN_ROUND,
         WIN_ROUND,
         WIN_ROUND_BEEP_ON,
@@ -386,15 +382,15 @@ module cu #(
                     regfile_we = 1
                     regfile_wa = d10 // temp_3
                     if ((decrease_timer) && (wires_edge)){
-                        fsm.d = GameStates.DECREASE_TIMER_AND_PREPARE_ANTICHEAT
+                        fsm.d = GameStates.DECREASE_TIMER_AND_CHECK_WIRE_PULL
                     } else if (wires_edge){
-                        fsm.d = GameStates.PREPARE_ANTICHEAT
+                        fsm.d = GameStates.CHECK_WIRE_PULL_STEP_1
                     } else if (decrease_timer){
                         fsm.d = GameStates.DECREASE_TIMER
                     }
                 
                 // decrement seconds_remaining by 1
-                GameStates.DECREASE_TIMER_AND_PREPARE_ANTICHEAT:
+                GameStates.DECREASE_TIMER_AND_CHECK_WIRE_PULL:
                     regfile_ra1 = d1 // seconds remaining
                     asel = b000 // ra1 output
                     bsel = b10 // 1
@@ -402,20 +398,10 @@ module cu #(
                     alu_out_sel = b00 // alu output
                     regfile_we = 1 
                     regfile_wa = d1 // seconds remaining
-                    fsm.d = GameStates.PREPARE_ANTICHEAT
-                
-                // store wire states in temp_2 for use in GameStates.ANTICHEAT later (see below)
-                GameStates.PREPARE_ANTICHEAT:
-                    // store wires in temp_2. temp_2 is accessed in ANTICHEAT
-                    asel = b100 // wires
-                    alufn = b011010 // A
-                    alu_out_sel = b00 // alu output
-                    regfile_we = 1
-                    regfile_wa = d9 // temp_2
-                    fsm.d = GameStates.CHECK_WIRE_PULL_STEP_2
+                    fsm.d = GameStates.CHECK_WIRE_PULL_STEP_1
                 
                 // SHR temp_3 by temp_4 bits and store in temp_3. If the correct wire is pulled, temp_3 should be 1.
-                GameStates.CHECK_WIRE_PULL_STEP_2:
+                GameStates.CHECK_WIRE_PULL_STEP_1:
                     regfile_ra2 = d11 // temp_4
                     regfile_ra1 = d10 // temp_3
                     asel = b000 // rd1 output
@@ -424,10 +410,10 @@ module cu #(
                     alu_out_sel = b00 // alu output
                     regfile_we = 1
                     regfile_wa = d10 // temp_3
-                    fsm.d = GameStates.CHECK_WIRE_PULL_STEP_3
+                    fsm.d = GameStates.CHECK_WIRE_PULL_STEP_2
                 
                 // check if temp_3 = 1 and store the result in temp_3
-                GameStates.CHECK_WIRE_PULL_STEP_3:
+                GameStates.CHECK_WIRE_PULL_STEP_2:
                     regfile_ra1 = d10 // temp_3
                     asel = b000 // rd1 output
                     bsel = b10 // 1
@@ -437,33 +423,10 @@ module cu #(
                     regfile_wa = d10 // temp_3
                     fsm.d = GameStates.BRANCH_WIRE_PULL
                 
-                // if wrong wire, trigger game over state. Else, perform anticheat check 
+                // if wrong wire, trigger game over state. 
                 GameStates.BRANCH_WIRE_PULL:
                     regfile_ra2 = d10 // temp_3
                     if (regfile_rd2){
-                        //fsm.d = GameStates.ANTICHEAT
-                        fsm.d = GameStates.BRANCH_ANTICHEAT
-                    } else {
-                        fsm.d = GameStates.GAME_OVER_SET_TIMER
-                    }
-                
-                // detects mismatches between wire states 5 clks ago (temp_2) and wire states now
-                // ensures that the user does not break the game by pulling multiple wires in rapid succession
-                GameStates.ANTICHEAT:
-                    regfile_ra2 = d9 // temp_2
-                    asel = b100 // wires
-                    bsel = b00 // rd2 output
-                    alufn = b110011 // CMPEQ
-                    alu_out_sel = b00
-                    regfile_we = 1 
-                    regfile_wa = d10 // temp_3
-                    fsm.d = GameStates.BRANCH_ANTICHEAT
-                
-                GameStates.BRANCH_ANTICHEAT:
-                    regfile_ra2 = d10 // temp_3
-                    if (regfile_rd2){
-                        // anticheat passed
-                        // checks whether enough wires have been pulled to win the current round
                         regfile_ra1 = d8 // temp_1
                         asel = b000 // rd1 output
                         bsel = b11 // 5
@@ -473,7 +436,6 @@ module cu #(
                         regfile_wa = d10 // temp_3
                         fsm.d = GameStates.BRANCH_WIN_ROUND
                     } else {
-                        // trigger game over state if wire states mismatch
                         fsm.d = GameStates.GAME_OVER_SET_TIMER
                     }
                 
@@ -649,7 +611,7 @@ module cu #(
                     alufn = b011010 // A
                     regfile_we = 1 
                     regfile_wa = d7 // buzzer
-                    fsm.d = GameStates.PREPARE_ANTICHEAT
+                    fsm.d = GameStates.CHECK_WIRE_PULL_STEP_1
                 
                 // store signal to be debugged in temp_4
                 GameStates.DEBUG1:
@@ -717,9 +679,9 @@ module cu #(
                 regfile_we = 1
                 regfile_wa = d10 // temp_3
                 if (decrease_timer){
-                    fsm.d = GameStates.DECREASE_TIMER_AND_PREPARE_ANTICHEAT
+                    fsm.d = GameStates.DECREASE_TIMER_AND_CHECK_WIRE_PULL
                 } else {
-                    fsm.d = GameStates.PREPARE_ANTICHEAT
+                    fsm.d = GameStates.CHECK_WIRE_PULL_STEP_1
                 }
             }
         }

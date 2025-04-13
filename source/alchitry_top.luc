@@ -55,11 +55,11 @@ module alchitry_top (
         btn_cond.in = io_button[0] //to reduce the bouncing effects of your button
         edge_dt_btn.in = btn_cond.out //get the edge of button press
         
-        wire_cond.in = io_dip[0][7:3]
+        wire_cond.in = io_dip[0][4:0]
         edge_dt_wire.in = wire_cond.out
         
         datapath.button = edge_dt_btn.out
-        datapath.wires = io_dip[0][7:3]
+        datapath.wires = io_dip[0][4:0]
         datapath.wires_edge = edge_dt_wire.out
         
         //update 7segments
