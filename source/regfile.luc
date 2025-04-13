@@ -125,7 +125,7 @@ module regfile (
         led[4] = led_5.q
         temp_1_out = temp_1.q
         debug[0] = temp_4.q
-        debug[1] = temp_3.q
+        debug[1] = temp_2.q
         debug[2] = temp_1.q
         debug[3] = temp_2.q
     }

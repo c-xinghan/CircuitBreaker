@@ -177,17 +177,6 @@ module cu #(
                     alu_out_sel = b00
                     regfile_we = 1 
                     regfile_wa = d8 // temp_1
-                    fsm.d = GameStates.DECREASE_I_SHUFFLE 
-                
-                // decrement index I by 1 
-                GameStates.DECREASE_I_SHUFFLE:
-                    regfile_ra1 = d8 // temp_1
-                    asel = b000 // rd1 output
-                    bsel = b10 // 1
-                    alufn = b000001 // SUB              
-                    alu_out_sel = b00
-                    regfile_we = 1 
-                    regfile_wa = d8 // temp_1
                     fsm.d = GameStates.GET_RANDOM_J 
                 
                 // index J is stored in temp_2. It is a randomly generated number in [1, I].
@@ -241,13 +230,24 @@ module cu #(
                     alu_out_sel = b00 
                     regfile_we = 1 
                     regfile_wa = d1 + regfile_rd2
-                    fsm.d = GameStates.CHECK_RANDOM_WIRE
+                    fsm.d = GameStates.DECREASE_I_SHUFFLE
+                
+                // decrement index I by 1 
+                GameStates.DECREASE_I_SHUFFLE:
+                    regfile_ra1 = d8 // temp_1
+                    asel = b000 // rd1 output
+                    bsel = b10 // 1
+                    alufn = b000001 // SUB              
+                    alu_out_sel = b00
+                    regfile_we = 1 
+                    regfile_wa = d8 // temp_1
+                    fsm.d = GameStates.CHECK_RANDOM_WIRE 
                 
                 // checks if index I = 1 and stores the result in temp_3
                 GameStates.CHECK_RANDOM_WIRE:
                     regfile_ra1 = d8 // temp_1
                     asel = b000 // rd1 output
-                    bsel = b10 // 1
+                    bsel = b01 // 0
                     alufn = b110011 // CMPEQ   
                     alu_out_sel = b00 
                     regfile_we = 1
@@ -337,7 +337,8 @@ module cu #(
                     alu_out_sel = regfile_rd2[1:0] // round
                     regfile_we = 1
                     regfile_wa = d1
-                    fsm.d = GameStates.DEBUG1
+                    //fsm.d = GameStates.DEBUG1
+                    fsm.d = GameStates.PROCEED_TO_GAME
                 
                 // index I is stored in temp_1. Here it represents (wires cut so far + 1).
                 // reset I to 1, proceed to game
@@ -375,12 +376,12 @@ module cu #(
                     
                 // wait for decrease_timer or user input
                 GameStates.IDLE:
-                    // store pulled wire in temp_3
+                    // store pulled wire in temp_2
                     asel = b101 // wires_edge
                     alufn = b011010 // A
                     alu_out_sel = b00 // alu output
                     regfile_we = 1
-                    regfile_wa = d10 // temp_3
+                    regfile_wa = d9 // temp_2
                     if ((decrease_timer) && (wires_edge)){
                         fsm.d = GameStates.DECREASE_TIMER_AND_CHECK_WIRE_PULL
                     } else if (wires_edge){
@@ -400,10 +401,10 @@ module cu #(
                     regfile_wa = d1 // seconds remaining
                     fsm.d = GameStates.CHECK_WIRE_PULL_STEP_1
                 
-                // SHR temp_3 by temp_4 bits and store in temp_3. If the correct wire is pulled, temp_3 should be 1.
+                // SHR temp_2 by temp_4 bits and store in temp_3. If the correct wire is pulled, temp_3 should be 1.
                 GameStates.CHECK_WIRE_PULL_STEP_1:
                     regfile_ra2 = d11 // temp_4
-                    regfile_ra1 = d10 // temp_3
+                    regfile_ra1 = d9 // temp_2
                     asel = b000 // rd1 output
                     bsel = b00 // rd2 output
                     alufn = b100001 // SHR
@@ -672,12 +673,12 @@ module cu #(
 
             }
             if (regfile_rd2 && wires_edge){
-                // store pulled wire in temp_3
+                // store pulled wire in temp_2
                 asel = b101 // wires_edge
                 alufn = b011010 // A
                 alu_out_sel = b00 // alu output
                 regfile_we = 1
-                regfile_wa = d10 // temp_3
+                regfile_wa = d9 // temp_2
                 if (decrease_timer){
                     fsm.d = GameStates.DECREASE_TIMER_AND_CHECK_WIRE_PULL
                 } else {
