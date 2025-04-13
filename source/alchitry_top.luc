@@ -28,13 +28,14 @@ module alchitry_top (
         edge_detector edge_dt_wire[5](#RISE(5x{{0}}), #FALL(5x{{1}}))
         button_conditioner wire_cond[5](#CLK_FREQ(5x{{CLK_FREQ}}))
         .rst(rst){
-            multi_seven_seg seg(#DIV(SEVEN_SEG_DIV), #DIGITS(4))
+            multi_seven_seg seg(#DIV(SEVEN_SEG_DIV), #DIGITS(3))
             datapath datapath(#SLOW_CLOCK_DIV(SLOW_CLOCK_DIV), #FAST_CLOCK_DIV(FAST_CLOCK_DIV), 
                 #FASTER_CLOCK_DIV(FASTER_CLOCK_DIV), #FASTEST_CLOCK_DIV(FASTEST_CLOCK_DIV))
         }
     }
 
-    bin_to_dec bin_to_dec_converter(#DIGITS(4))
+    bin_to_dec bin_to_dec_converter(#DIGITS(2))
+    bin_to_dec bin_to_dec_converter2(#DIGITS(1))
     
     always {
         reset_cond.in = ~rst_n  // input raw inverted reset signal
@@ -63,13 +64,14 @@ module alchitry_top (
         datapath.wires_edge = edge_dt_wire.out
         
         //update 7segments
-        seg.values = 4x{{4b0}} // default to all 0 first
+        seg.values = 3x{{4b0}} // default to all 0 first
         bin_to_dec_converter.value = datapath.timer_out
+        bin_to_dec_converter2.value = datapath.round_out
         //bin_to_dec_converter.value = datapath.debug_general1
         repeat(i, 3, 0, 1) {
             io_led[i] = datapath.debug_general[i]
         }
-        seg.values = bin_to_dec_converter.digits
+        seg.values = c{bin_to_dec_converter2.digits, bin_to_dec_converter.digits}
         io_segment = ~seg.seg
         io_select = ~seg.sel
 
