@@ -95,9 +95,9 @@ module datapath#(
         // wdsel mux
         case (cu.alu_out_sel){
             b00 : regfile.data = alu.out
-            b01 : regfile.data = h3C
-            b10 : regfile.data = h28
-            b11 : regfile.data = hF
+            b01 : regfile.data = h1E
+            b10 : regfile.data = h14
+            b11 : regfile.data = hA
             default : 
                 regfile.data = alu.out
         }

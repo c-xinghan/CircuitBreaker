@@ -32,7 +32,10 @@ module cu #(
         INIT3,
         INIT4,
         INIT5,
-        START_ROUND_RESET_TIMER,
+        PRESS_TO_START,
+        YOU_MUST_CONNECT_ZE_WIRES,
+        GO_CONNECT_ZE_WIRES,
+        RESET_TIMER,
         START_ROUND,
         GET_RANDOM_J,
         INITIALISE_I_SHUFFLE,
@@ -155,9 +158,42 @@ module cu #(
                     alu_out_sel = b00
                     regfile_we = 1 
                     regfile_wa = d6
+                    fsm.d = GameStates.PRESS_TO_START
+                
+                GameStates.PRESS_TO_START:
                     if ((button) && (&wires)){
-                        fsm.d = GameStates.START_ROUND
+                        fsm.d = GameStates.RESET_TIMER
+                    } else if (button){
+                        fsm.d = GameStates.YOU_MUST_CONNECT_ZE_WIRES
                     }
+                
+                GameStates.YOU_MUST_CONNECT_ZE_WIRES:
+                    regfile_ra1 = d12 // led_1 (red)
+                    asel = b010 // 1
+                    alufn = b011010 // A
+                    alu_out_sel = b00 // alu out
+                    regfile_we = 1
+                    regfile_wa = d12 // led_1 (red)
+                    if (blink_timer2){
+                        fsm.d = GameStates.GO_CONNECT_ZE_WIRES
+                    }
+                
+                GameStates.GO_CONNECT_ZE_WIRES:
+                    regfile_ra1 = d12 // led_1 (red)
+                    asel = b001 // 0
+                    alufn = b011010 // A
+                    alu_out_sel = b00 // alu out
+                    regfile_we = 1
+                    regfile_wa = d12 // led_1 (red)
+                    fsm.d = GameStates.PRESS_TO_START
+                
+                // reset timer to 0 before starting new round
+                GameStates.RESET_TIMER:
+                    asel = b01 // 0 
+                    alufn = b011010 // A
+                    regfile_we = 1
+                    regfile_wa  = d1 // seconds_remaining
+                    fsm.d = GameStates.START_ROUND
                 
                 // increment round counter
                 GameStates.START_ROUND: 
@@ -506,18 +542,8 @@ module cu #(
                     if (regfile_rd2){
                         fsm.d = GameStates.WIN_ROUND_BEEP_REPEAT
                     } else {
-                        if ((button) && (&wires)){
-                            fsm.d = GameStates.START_ROUND_RESET_TIMER
-                        }
+                        fsm.d = GameStates.PRESS_TO_START
                     }
-                
-                // reset timer to 0 before starting new round
-                GameStates.START_ROUND_RESET_TIMER:
-                    asel = b01 // 0 
-                    alufn = b011010 // A
-                    regfile_we = 1
-                    regfile_wa  = d1 // seconds_remaining
-                    fsm.d = GameStates.START_ROUND
                 
                 // increment I by 1
                 GameStates.WIN_ROUND_BEEP_REPEAT:

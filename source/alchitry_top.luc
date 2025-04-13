@@ -12,7 +12,7 @@ module alchitry_top (
 ) {
     
     sig rst                 // reset signal
-    const CLK_FREQ = $is_sim() ? 1000 : 10000000 // put 1000 for sim, 10000000 otherwise in hardware
+    const CLK_FREQ = $is_sim() ? 1000 : 100000000 // put 1000 for sim, 100000000 otherwise in hardware
     const SEVEN_SEG_DIV = $is_sim() ? 3 : 16 // put 3 for sim, 16 for hardware
     const SLOW_CLOCK_DIV = $is_sim() ? 9 : 26 // put 9 for sim, 26 for hardware 
     const FAST_CLOCK_DIV = $is_sim() ? 5d7 : 5d25 // put 7 for sim, 21 for hardware 
@@ -71,6 +71,7 @@ module alchitry_top (
         repeat(i, 3, 0, 1) {
             io_led[i] = datapath.debug_general[i]
         }
+        io_led[2] = datapath.led_out[0]
         seg.values = c{bin_to_dec_converter2.digits, bin_to_dec_converter.digits}
         io_segment = ~seg.seg
         io_select = ~seg.sel
