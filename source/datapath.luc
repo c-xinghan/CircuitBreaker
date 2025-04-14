@@ -31,9 +31,10 @@ module datapath#(
         
         // edge detector declaration & connection with counters
         edge_detector edge_detector_game_timer(#RISE(1), #FALL(0), .in(game_timer_clock.value))
-        edge_detector edge_detector_fast(#RISE(1), #FALL(0), .in(fastclock.value))
-        edge_detector edge_detector_faster(#RISE(1), #FALL(0), .in(fasterclock.value))
-        edge_detector edge_detector_fastest(#RISE(1), #FALL(0), .in(fastestclock.value))
+        edge_detector edge_fast[3](#RISE(3x{{1}}), #FALL(3x{{0}}), .in(c{fastestclock.value, fasterclock.value, fastclock.value}))
+        //edge_detector edge_detector_fast(#RISE(1), #FALL(0), .in(fastclock.value))
+        //edge_detector edge_detector_faster(#RISE(1), #FALL(0), .in(fasterclock.value))
+        //edge_detector edge_detector_fastest(#RISE(1), #FALL(0), .in(fastestclock.value))
         
         random_number_generator generator(.slow_clk(fastestclock.value), .refresh(button))
         
@@ -43,9 +44,7 @@ module datapath#(
             .wires_edge(wires_edge),
             .rst(rst),
             .decrease_timer(edge_detector_game_timer.out),
-            .blink_timer1(edge_detector_fast.out),
-            .blink_timer2(edge_detector_faster.out),
-            .blink_timer3(edge_detector_fastest.out),
+            .blink_timers(edge_fast.out),
             #SLOW_CLOCK_DIV(SLOW_CLOCK_DIV),
             #FAST_CLOCK_DIV(FAST_CLOCK_DIV)
         )
@@ -72,6 +71,7 @@ module datapath#(
             b011  : input_alu_a = generator.out - (generator.out/4) * 4 + 1
             b100  : input_alu_a = wires
             b101  : input_alu_a = wires_edge
+            b110  : input_alu_a = b11
             default : 
                 input_alu_a = 0
         }

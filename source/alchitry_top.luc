@@ -71,7 +71,7 @@ module alchitry_top (
         repeat(i, 3, 0, 1) {
             io_led[i] = datapath.debug_general[i]
         }
-        io_led[2] = datapath.led_out[0]
+        //io_led[2] = datapath.led_out[0]
         seg.values = c{bin_to_dec_converter2.digits, bin_to_dec_converter.digits}
         io_segment = ~seg.seg
         io_select = ~seg.sel

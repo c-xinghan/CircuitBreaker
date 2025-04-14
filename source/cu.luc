@@ -5,9 +5,7 @@ module cu #(
     input clk,  // clock
     input rst,  // reset
     input decrease_timer,
-    input blink_timer1,
-    input blink_timer2,
-    input blink_timer3,
+    input blink_timers[3],
     input regfile_rd1[32], //direct reading of regfile data from rd2
     input regfile_rd2[32], //direct reading of regfile data from rd2
     
@@ -32,6 +30,8 @@ module cu #(
         INIT3,
         INIT4,
         INIT5,
+        CHECK_ROUND_COUNT,
+        BRANCH_ROUND_COUNT,
         PRESS_TO_START,
         YOU_MUST_CONNECT_ZE_WIRES,
         GO_CONNECT_ZE_WIRES,
@@ -49,6 +49,7 @@ module cu #(
         PROCEED_TO_FLASH,
         INCREASE_I_FLASH,
         FLASH_LED_ON,
+        FLASH_LED_CHECK_ROUND,
         FLASH_LED_OFF,
         CHECK_FLASH_LED,
         BRANCH_FLASH_LED,
@@ -76,6 +77,10 @@ module cu #(
         CHECK_WIN_ROUND_BEEP,
         BRANCH_WIN_ROUND_BEEP,
         WIN_ROUND_BEEP_REPEAT,
+        VICTORY_FLASH_ON,
+        VICTORY_BEEP_ON,
+        VICTORY_FLASH_OFF,
+        VICTORY_BEEP_OFF,
         DEBUG1,
         DEBUG2,
         DEBUG3,
@@ -158,7 +163,29 @@ module cu #(
                     alu_out_sel = b00
                     regfile_we = 1 
                     regfile_wa = d6
-                    fsm.d = GameStates.PRESS_TO_START
+                    fsm.d = GameStates.CHECK_ROUND_COUNT
+                
+                // checks if current round > 3 and stores the result in temp_1
+                GameStates.CHECK_ROUND_COUNT:
+                    regfile_ra2 = d0 // round
+                    asel = b110 // 3
+                    bsel = b00 // rd2 output
+                    alufn = b110111 // CMPLE
+                    alu_out_sel = b00 // alu output
+                    regfile_we = 1 
+                    regfile_wa = d8 // temp_1
+                    fsm.d = GameStates.BRANCH_ROUND_COUNT
+                
+                // if current round > 3, end game. Else, prepare to start/resume game.
+                GameStates.BRANCH_ROUND_COUNT:
+                    regfile_ra2 = d8 // temp_1
+                    if (regfile_rd2){
+                        // end game and toggle buzzer + led
+                        fsm.d = GameStates.VICTORY_FLASH_ON
+                    } else {
+                        // start/resume game
+                        fsm.d = GameStates.PRESS_TO_START
+                    }
                 
                 GameStates.PRESS_TO_START:
                     if ((button) && (&wires)){
@@ -174,7 +201,7 @@ module cu #(
                     alu_out_sel = b00 // alu out
                     regfile_we = 1
                     regfile_wa = d12 // led_1 (red)
-                    if (blink_timer2){
+                    if (blink_timers[1]){
                         fsm.d = GameStates.GO_CONNECT_ZE_WIRES
                     }
                 
@@ -197,13 +224,13 @@ module cu #(
                 
                 // increment round counter
                 GameStates.START_ROUND: 
-                    regfile_ra1 = d0
+                    regfile_ra1 = d0 // round
                     asel = b000
                     bsel = b10 // 1
                     alufn = b000000 // ADD              
                     alu_out_sel = b00
                     regfile_we = 1 
-                    regfile_wa = d0   
+                    regfile_wa = d0 // round
                     fsm.d = GameStates.INITIALISE_I_SHUFFLE
                 
                 // index I is stored in temp_1. Here it represents the iteration (1-4) for the Fisher-Yates shuffle. 
@@ -307,7 +334,7 @@ module cu #(
                     alu_out_sel = b00 // alu output
                     regfile_we = 1
                     regfile_wa = d8 // temp_1
-                    if (blink_timer1){
+                    if (blink_timers[0]){
                         fsm.d = GameStates.INCREASE_I_FLASH
                     }
                 
@@ -332,10 +359,22 @@ module cu #(
                     alu_out_sel = b00
                     regfile_we = 1
                     regfile_wa = d11 + regfile_rd1
-                    if (blink_timer1){
-                        fsm.d = GameStates.FLASH_LED_OFF
+                    fsm.d = GameStates.FLASH_LED_CHECK_ROUND
+                
+                GameStates.FLASH_LED_CHECK_ROUND:
+                    regfile_ra2 = d0 // round
+                    case (regfile_rd2){
+                        1: if (blink_timers[0]){
+                            fsm.d = GameStates.FLASH_LED_OFF
+                        }
+                        2: if (blink_timers[1]){
+                            fsm.d = GameStates.FLASH_LED_OFF
+                        }
+                        3: if (blink_timers[2]){
+                            fsm.d = GameStates.FLASH_LED_OFF
+                        }
                     }
-           
+                
                 // turn off the LED corresponding to the ith wire
                 GameStates.FLASH_LED_OFF:
                     regfile_ra2 = d8 // temp_1
@@ -384,7 +423,7 @@ module cu #(
                     alu_out_sel = b00 // alu output
                     regfile_we = 1
                     regfile_wa = d8 // temp_1
-                    if (blink_timer1){
+                    if (blink_timers[0]){
                         fsm.d = GameStates.SET_INPROGRESS
                     }
                 
@@ -460,10 +499,11 @@ module cu #(
                     regfile_wa = d10 // temp_3
                     fsm.d = GameStates.BRANCH_WIRE_PULL
                 
-                // if wrong wire, trigger game over state. 
+                // if wrong wire, trigger game over state. else, check if 5th wire has been pulled 
                 GameStates.BRANCH_WIRE_PULL:
                     regfile_ra2 = d10 // temp_3
                     if (regfile_rd2){
+                        // check if 5th wire has been pulled 
                         regfile_ra1 = d8 // temp_1
                         asel = b000 // rd1 output
                         bsel = b11 // 5
@@ -473,9 +513,11 @@ module cu #(
                         regfile_wa = d10 // temp_3
                         fsm.d = GameStates.BRANCH_WIN_ROUND
                     } else {
+                        // trigger game over state
                         fsm.d = GameStates.GAME_OVER_SET_TIMER
                     }
                 
+                // if 5th wire is pulled, trigger round win state. else, move on to next wire.
                 GameStates.BRANCH_WIN_ROUND:
                     regfile_ra2 = d10 // temp_3
                     if (regfile_rd2){
@@ -488,6 +530,7 @@ module cu #(
                         regfile_wa = d17 // round_inprogress
                         fsm.d = GameStates.WIN_ROUND
                     } else {
+                        // increment I (temp_1) by 1 to "move on" to the next wire in the sequence
                         regfile_ra1 = d8 // temp_1
                         asel = b000 // rd1 output
                         bsel = b10 // 1
@@ -512,7 +555,7 @@ module cu #(
                     alufn = b011010 // A
                     regfile_we = 1 
                     regfile_wa = d7 // buzzer
-                    if (blink_timer2){
+                    if (blink_timers[1]){
                         fsm.d = GameStates.WIN_ROUND_BEEP_OFF
                     }
                 
@@ -522,7 +565,7 @@ module cu #(
                     alufn = b011010 // A
                     regfile_we = 1 
                     regfile_wa = d7 // buzzer
-                    if (blink_timer1){
+                    if (blink_timers[1]){
                         fsm.d = GameStates.CHECK_WIN_ROUND_BEEP
                     }
                 
@@ -540,20 +583,16 @@ module cu #(
                 GameStates.BRANCH_WIN_ROUND_BEEP:
                     regfile_ra2 = d9
                     if (regfile_rd2){
-                        fsm.d = GameStates.WIN_ROUND_BEEP_REPEAT
+                        regfile_ra1 = d8 // temp_1
+                        asel = b000 // rd1 output
+                        bsel = b10 // 1
+                        alufn = b000000 // ADD
+                        regfile_we = 1 
+                        regfile_wa = d8 // temp_1
+                        fsm.d = GameStates.WIN_ROUND_BEEP_ON
                     } else {
-                        fsm.d = GameStates.PRESS_TO_START
+                        fsm.d = GameStates.CHECK_ROUND_COUNT
                     }
-                
-                // increment I by 1
-                GameStates.WIN_ROUND_BEEP_REPEAT:
-                    regfile_ra1 = d8 // temp_1
-                    asel = b000 // rd1 output
-                    bsel = b10 // 1
-                    alufn = b000000 // ADD
-                    regfile_we = 1 
-                    regfile_wa = d8 // temp_1
-                    fsm.d = GameStates.WIN_ROUND_BEEP_ON
                 
                 // check if seconds_remaining < 1 and store the result in temp_3
                 GameStates.CHECK_TIMER:
@@ -620,7 +659,7 @@ module cu #(
                         regfile_we = 1
                         regfile_wa = d10 // temp_3
                         fsm.d = GameStates.BEEP_BUZZER_OFF_AND_CHECK_WIRE_PULL
-                    } else if (blink_timer1){
+                    } else if (blink_timers[0]){
                         fsm.d = GameStates.BEEP_BUZZER_OFF
                     }
                 
@@ -640,9 +679,44 @@ module cu #(
                     regfile_wa = d7 // buzzer
                     fsm.d = GameStates.CHECK_WIRE_PULL_STEP_1
                 
+                GameStates.VICTORY_FLASH_ON:
+                    asel = b010 // 1 
+                    alufn = b011010 // A
+                    alu_out_sel = b00 // alu output
+                    regfile_we = 1
+                    regfile_wa = d14 // led_3
+                    fsm.d = GameStates.VICTORY_BEEP_ON
+                
+                GameStates.VICTORY_BEEP_ON:
+                    asel = b010 // 1
+                    alufn = b011010 // A
+                    alu_out_sel = b00 // alu output
+                    regfile_we = 1
+                    regfile_wa = d7 // buzzer
+                    if (blink_timers[1]){
+                        fsm.d = GameStates.VICTORY_FLASH_OFF
+                    }
+                
+                GameStates.VICTORY_FLASH_OFF:
+                    asel = b001 // 0
+                    alufn = b011010 // A
+                    alu_out_sel = b00 // alu output
+                    regfile_we = 1
+                    regfile_wa = d14 // led_3
+                    fsm.d = GameStates.VICTORY_BEEP_OFF
+                
+                GameStates.VICTORY_BEEP_OFF:
+                    asel = b001 // 0
+                    alufn = b011010 // A
+                    alu_out_sel = b00 // alu output
+                    regfile_we = 1
+                    regfile_wa = d7 // buzzer
+                    if (blink_timers[0]){
+                        fsm.d = GameStates.VICTORY_FLASH_ON
+                    }
+                
                 // store signal to be debugged in temp_4
                 GameStates.DEBUG1:
-                    regfile_ra1 = d2
                     asel = b000        
                     alufn = b011010 // A   
                     alu_out_sel = b00
