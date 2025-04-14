@@ -324,7 +324,7 @@ module cu #(
                         fsm.d = GameStates.PROCEED_TO_FLASH
                     } else {
                         //fsm.d = GameStates.DEBUG1
-                        fsm.d = GameStates.DECREASE_I_SHUFFLE
+                        fsm.d = GameStates.GET_RANDOM_J
                     }
                 
                 // reset temp_1 to 0, proceed to flash LEDs
@@ -618,7 +618,7 @@ module cu #(
                 GameStates.GAME_OVER_SET_TIMER:
                     asel = b001 // 0
                     alufn = b011010 // A
-                    alu_out_sel = d00 // alu output
+                    alu_out_sel = b00 // alu output
                     regfile_we = 1
                     regfile_wa = d1 // seconds_remaining
                     fsm.d = GameStates.GAME_OVER

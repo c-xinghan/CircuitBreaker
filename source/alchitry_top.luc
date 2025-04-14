@@ -67,7 +67,6 @@ module alchitry_top (
         seg.values = 3x{{4b0}} // default to all 0 first
         bin_to_dec_converter.value = datapath.timer_out
         bin_to_dec_converter2.value = datapath.round_out
-        //bin_to_dec_converter.value = datapath.debug_general1
         repeat(i, 3, 0, 1) {
             io_led[i] = datapath.debug_general[i]
         }
@@ -75,20 +74,5 @@ module alchitry_top (
         seg.values = c{bin_to_dec_converter2.digits, bin_to_dec_converter.digits}
         io_segment = ~seg.seg
         io_select = ~seg.sel
-
-        //io_led[2] = game_datapath.timer_out // timer
-        //io_led[0] = game_datapath.p1_score_out    // p1 score 
-        //io_led[1] = game_datapath.p2_score_out    // p2 score
-        //led[0] = game_datapath.slow_clock_out
-        //led[1] = game_datapath.variable_clock_out
-        //led[7:6] = game_datapath.p1_button_press_out
-        //led[5:4] = game_datapath.p2_button_press_out
-        
-        //io_segment = random_wires.io_segment
-        //io_select = random_wires.io_select
-        
-        //io_led = random_wires.io_led
-        //led = random_wires.led
-        
     }
 }
