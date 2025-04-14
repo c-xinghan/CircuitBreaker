@@ -76,7 +76,6 @@ module cu #(
         WIN_ROUND_BEEP_OFF,
         CHECK_WIN_ROUND_BEEP,
         BRANCH_WIN_ROUND_BEEP,
-        WIN_ROUND_BEEP_REPEAT,
         VICTORY_FLASH_ON,
         VICTORY_BEEP_ON,
         VICTORY_FLASH_OFF,
