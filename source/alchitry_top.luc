@@ -38,7 +38,8 @@ module alchitry_top (
     bin_to_dec bin_to_dec_converter2(#DIGITS(1))
     
     always {
-        reset_cond.in = ~rst_n  // input raw inverted reset signal
+        //reset_cond.in = ~rst_n  // input raw inverted reset signal
+        reset_cond.in = rst_n  // input raw inverted reset signal
         rst = reset_cond.out    // conditioned reset
         
         led = 8h00             // turn LEDs off    
@@ -72,7 +73,8 @@ module alchitry_top (
         }
         //io_led[2] = datapath.led_out[0]
         seg.values = c{bin_to_dec_converter2.digits, bin_to_dec_converter.digits}
-        io_segment = ~seg.seg
+        //io_segment = ~seg.seg
+        io_segment = seg.seg
         io_select = ~seg.sel
     }
 }
