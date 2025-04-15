@@ -12,7 +12,7 @@ module alchitry_top (
 ) {
     
     sig rst                 // reset signal
-    const CLK_FREQ = $is_sim() ? 1000 : 100000000 // put 1000 for sim, 100000000 otherwise in hardware
+    const CLK_FREQ = $is_sim() ? 100 : 10000000 // put 1000 for sim, 100000000 otherwise in hardware
     const SEVEN_SEG_DIV = $is_sim() ? 3 : 16 // put 3 for sim, 16 for hardware
     const SLOW_CLOCK_DIV = $is_sim() ? 9 : 26 // put 9 for sim, 26 for hardware 
     const FAST_CLOCK_DIV = $is_sim() ? 5d7 : 5d25 // put 7 for sim, 21 for hardware 
@@ -26,7 +26,7 @@ module alchitry_top (
         edge_detector edge_dt_btn (#RISE(1), #FALL(0))
         button_conditioner btn_cond(#CLK_FREQ(CLK_FREQ))
         edge_detector edge_dt_wire[5](#RISE(5x{{0}}), #FALL(5x{{1}}))
-        button_conditioner wire_cond[5](#CLK_FREQ(5x{{CLK_FREQ}}))
+        button_conditioner wire_cond[5](#CLK_FREQ(5x{{CLK_FREQ}}), #MIN_DELAY(5x{{100}}))
         .rst(rst){
             multi_seven_seg seg(#DIV(SEVEN_SEG_DIV), #DIGITS(3))
             datapath datapath(#SLOW_CLOCK_DIV(SLOW_CLOCK_DIV), #FAST_CLOCK_DIV(FAST_CLOCK_DIV), 

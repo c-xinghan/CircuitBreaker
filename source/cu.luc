@@ -658,15 +658,7 @@ module cu #(
                     alufn = b011010 // A
                     regfile_we = 1 
                     regfile_wa = d7 // buzzer
-                    if (wires_edge){
-                        // store pulled wire in temp_3
-                        asel = b101 // wires_edge
-                        alufn = b011010 // A
-                        alu_out_sel = b00 // alu output
-                        regfile_we = 1
-                        regfile_wa = d10 // temp_3
-                        fsm.d = GameStates.BEEP_BUZZER_OFF_AND_CHECK_WIRE_PULL
-                    } else if (blink_timers[0]){
+                    if (blink_timers[0]){
                         fsm.d = GameStates.BEEP_BUZZER_OFF
                     }
                 
