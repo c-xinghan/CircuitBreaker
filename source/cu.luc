@@ -69,6 +69,7 @@ module cu #(
         DECREASE_TIMER_AND_CHECK_WIRE_PULL,
         CHECK_WIRE_PULL_STEP_1,
         CHECK_WIRE_PULL_STEP_2,
+        CHECK_WIRE_PULL_STEP_3,
         BRANCH_WIRE_PULL,
         BRANCH_WIN_ROUND,
         WIN_ROUND,
@@ -475,8 +476,15 @@ module cu #(
                     regfile_wa = d1 // seconds remaining
                     fsm.d = GameStates.CHECK_WIRE_PULL_STEP_1
                 
-                // SHR temp_2 by temp_4 bits and store in temp_3. If the correct wire is pulled, temp_3 should be 1.
                 GameStates.CHECK_WIRE_PULL_STEP_1:
+                    asel = b001 // 0
+                    alufn = b011010 // A
+                    regfile_we = 1 
+                    regfile_wa = d7 // buzzer
+                    fsm.d = GameStates.CHECK_WIRE_PULL_STEP_2
+                
+                // SHR temp_2 by temp_4 bits and store in temp_3. If the correct wire is pulled, temp_3 should be 1.
+                GameStates.CHECK_WIRE_PULL_STEP_2:
                     regfile_ra2 = d11 // temp_4
                     regfile_ra1 = d9 // temp_2
                     asel = b000 // rd1 output
@@ -485,10 +493,10 @@ module cu #(
                     alu_out_sel = b00 // alu output
                     regfile_we = 1
                     regfile_wa = d10 // temp_3
-                    fsm.d = GameStates.CHECK_WIRE_PULL_STEP_2
+                    fsm.d = GameStates.CHECK_WIRE_PULL_STEP_3
                 
                 // check if temp_3 = 1 and store the result in temp_3
-                GameStates.CHECK_WIRE_PULL_STEP_2:
+                GameStates.CHECK_WIRE_PULL_STEP_3:
                     regfile_ra1 = d10 // temp_3
                     asel = b000 // rd1 output
                     bsel = b10 // 1
