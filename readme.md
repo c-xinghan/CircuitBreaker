@@ -12,6 +12,6 @@ The included Lucid code features:
 ![CS-Datapath-drawio](https://github.com/user-attachments/assets/4c209e81-ff73-414e-876c-7629c0a635a4)<br>
 ## 3. A FSM (finite state machine) with the following states
 ![FSM-Updated-drawio](https://github.com/user-attachments/assets/7567db27-0baf-470d-bce2-397e65976654)<br>
-## 4. A quasi-random number generator
+## 4. A pseudo-random number generator
 Credits: https://natalieagus.github.io/50002/fpga/fpga_2_2024
 ## 5. All other standard Alchitry modules 
